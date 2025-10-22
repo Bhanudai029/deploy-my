@@ -173,7 +173,7 @@ def list_files():
 def delete_file():
     """Delete a file from local storage or Supabase"""
     try:
-     data = request.json
+        data = request.json
         file_name = data.get('name', '')
         location = data.get('location', '')
         
@@ -204,7 +204,7 @@ def delete_file():
                 return jsonify({'error': f'Supabase deletion failed: {str(e)}'}), 500
         else:
             return jsonify({'error': 'Invalid location'}), 400
-
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
