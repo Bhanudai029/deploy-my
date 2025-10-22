@@ -1,6 +1,5 @@
 [build]
   publish = "public"
-  command = "cp templates/index.html public/index.html"
 
 [[redirects]]
   from = "/*"
