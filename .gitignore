@@ -33,3 +33,6 @@ thumbnails/
 
 # Windows
 AppData/
+
+# Local Netlify folder
+.netlify
