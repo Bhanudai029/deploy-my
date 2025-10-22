@@ -351,8 +351,8 @@
         }
         
         .section-header {
-            display: flex;
-            align-items: center;
+          display: flex;
+          align-items: center;
             justify-content: space-between;
             margin-bottom: 20px;
         }
@@ -499,6 +499,63 @@
             color: var(--text-secondary);
         }
         
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, var(--success) 0%, var(--primary) 100%);
+            color: var(--darker-bg);
+            padding: 18px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow: 0 8px 32px rgba(0, 255, 136, 0.4);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.4s ease-out;
+            max-width: 400px;
+            word-wrap: break-word;
+        }
+        
+        .toast.error {
+            background: linear-gradient(135deg, var(--error) 0%, var(--secondary) 100%);
+            box-shadow: 0 8px 32px rgba(255, 51, 102, 0.4);
+        }
+        
+        .toast.info {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.4);
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+        
+        .toast.hide {
+            animation: slideOutRight 0.4s ease-out forwards;
+        }
+        
         /* Responsive design */
         @media (max-width: 768px) {
             .container {
@@ -566,11 +623,11 @@
             <div class="section-header">
                 <h2>📁 Files (Last 24 Hours)</h2>
                 <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
-            </div>
+                </div>
             <div id="filesContainer">
                 <div class="loading-files">
                     <span class="spinner"></span> Loading files...
-                </div>
+                    </div>
             </div>
         </div>
     </div>
@@ -578,11 +635,35 @@
     <script>
         let statusInterval = null;
         
+        // Toast Notification Function
+        function showToast(message, type = 'success') {
+            // Remove existing toasts
+            const existingToasts = document.querySelectorAll('.toast');
+            existingToasts.forEach(toast => toast.remove());
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            // Add icon based on type
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            toast.innerHTML = `<span style="font-size: 20px;">${icon}</span><span>${message}</span>`;
+            
+            // Add to body
+            document.body.appendChild(toast);
+            
+            // Auto remove after 4 seconds
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 400);
+            }, 4000);
+        }
+        
         async function startDownload() {
             const songsText = document.getElementById('songs').value.trim();
             
             if (!songsText) {
-                alert('Please enter some songs!');
+                showToast('Please enter some songs!', 'error');
                 return;
             }
 
@@ -607,15 +688,16 @@
                 const data = await response.json();
                 
                 if (response.ok) {
+                    showToast('Download started!', 'info');
                     // Start polling for status
                     statusInterval = setInterval(updateStatus, 1000);
-                } else {
-                    alert('Error: ' + data.error);
+            } else {
+                    showToast(data.error, 'error');
                     btn.disabled = false;
                     btn.innerHTML = '🚀 Start Download';
                 }
                 } catch (error) {
-                alert('Network error: ' + error.message);
+                showToast(`Network error: ${error.message}`, 'error');
                 btn.disabled = false;
                 btn.innerHTML = '🚀 Start Download';
             }
@@ -706,9 +788,9 @@
                 
                 if (data.error) {
                     container.innerHTML = `<div class="empty-state"><p>❌ Error: ${data.error}</p></div>`;
-                    return;
-                }
-                
+                return;
+            }
+            
                 if (data.files.length === 0) {
                     container.innerHTML = `
                         <div class="empty-state">
@@ -716,9 +798,9 @@
                             <p>No files found in the last 24 hours</p>
                         </div>
                     `;
-                    return;
-                }
-                
+                return;
+            }
+
                 let html = `
                     <div class="files-table-container">
                         <table class="files-table">
@@ -793,13 +875,13 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert(`✅ ${data.message}`);
+                    showToast(data.message, 'success');
                     loadFiles(); // Reload files list
                 } else {
-                    alert(`❌ Error: ${data.error}`);
+                    showToast(data.error, 'error');
                 }
             } catch (error) {
-                alert(`❌ Network error: ${error.message}`);
+                showToast(`Network error: ${error.message}`, 'error');
             }
         }
         
