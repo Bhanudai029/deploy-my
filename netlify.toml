@@ -1,6 +1,6 @@
 [build]
   publish = "public"
-  command = "mkdir -p public && cp templates/index.html public/index.html"
+  command = "cp templates/index.html public/index.html"
 
 [[redirects]]
   from = "/*"
