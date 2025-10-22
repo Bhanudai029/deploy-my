@@ -1,7 +1,10 @@
 providers = ["python"]
 
 [phases.setup]
-nixPkgs = ["ffmpeg"]
+nixPkgs = ["python311", "ffmpeg"]
+
+[phases.install]
+cmds = ["python3 -m venv --copies /opt/venv && . /opt/venv/bin/activate && pip install -r requirements.txt"]
 
 [start]
 cmd = "export PATH=\"/nix/var/nix/profiles/default/bin:$PATH\" && python3 app.py"
