@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
 import threading
 import os
 from pathlib import Path
@@ -7,6 +8,15 @@ from youtube_auto_downloader import YouTubeAutoDownloader
 from supabase_uploader import SupabaseUploader
 
 app = Flask(__name__)
+
+# Enable CORS for Netlify frontend
+CORS(app, resources={
+    r"/*": {
+        "origins": ["https://*.netlify.app", "http://localhost:*"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # Global variable to track download status
 download_status = {

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: youtube-auto-downloader
+    env: python
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt && chmod +x build.sh && bash build.sh"
+    startCommand: "gunicorn app_web:app --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --log-level info"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PORT
+        generateValue: true
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        value: https://aekvevvuanwzmjealdkl.supabase.co
+      - key: SUPABASE_KEY
+        sync: false
