@@ -10,3 +10,4 @@ gunicorn==21.2.0
 beautifulsoup4==4.12.3
 supabase==2.10.0
 python-socks==2.4.3
+ffmpeg-python==0.2.0
