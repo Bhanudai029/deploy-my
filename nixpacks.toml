@@ -1,6 +1,7 @@
 [phases.setup]
+providers = ["python"]
 aptPkgs = ["ffmpeg"]
 
 [start]
-cmd = "python3 app.py"
+cmd = "python app.py"
 
