@@ -347,78 +347,89 @@
             color: var(--primary);
             font-weight: 700;
             letter-spacing: 0.5px;
+            display: inline-block;
         }
         
-        .files-grid {
-            display: grid;
-            gap: 15px;
-            max-height: 500px;
-            overflow-y: auto;
-            padding-right: 10px;
-        }
-        
-        .files-grid::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .files-grid::-webkit-scrollbar-track {
-            background: rgba(0, 212, 255, 0.05);
-            border-radius: 10px;
-        }
-        
-        .files-grid::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 10px;
-        }
-        
-        .file-item {
-            background: rgba(5, 8, 18, 0.6);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 18px;
+        .section-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            transition: all 0.3s ease;
-            animation: slideIn 0.4s ease-out;
+            margin-bottom: 20px;
         }
         
-        .file-item:hover {
-            border-color: var(--primary);
-            background: rgba(0, 212, 255, 0.05);
-            transform: translateX(5px);
+        .files-table-container {
+            background: rgba(5, 8, 18, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
         }
         
-        .file-info {
-            flex: 1;
-            margin-right: 15px;
+        .files-table {
+            width: 100%;
+            border-collapse: collapse;
         }
         
-        .file-name {
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 15px;
-            margin-bottom: 8px;
-            word-break: break-word;
+        .files-table thead {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(131, 56, 236, 0.1) 100%);
+            border-bottom: 2px solid var(--border);
         }
         
-        .file-meta {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
+        .files-table thead th {
+            padding: 16px;
+            text-align: left;
+            color: var(--primary);
+            font-weight: 700;
             font-size: 13px;
-            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .files-table tbody {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .files-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        
+        .files-table tbody tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+            transform: scale(1.01);
+            box-shadow: inset 4px 0 0 var(--primary);
+        }
+        
+        .files-table tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        .files-table td {
+            padding: 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .file-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-icon {
+            font-size: 20px;
         }
         
         .file-badge {
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             color: var(--darker-bg);
-            padding: 4px 10px;
+            padding: 4px 12px;
             border-radius: 6px;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            display: inline-block;
         }
         
         .file-badge.supabase {
@@ -430,24 +441,25 @@
             color: white;
             border: none;
             border-radius: 8px;
-            padding: 10px 15px;
+            padding: 8px 16px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             transition: all 0.3s ease;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 6px;
-            box-shadow: 0 0 20px rgba(255, 51, 102, 0.2);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.2);
+            width: auto;
         }
         
         .delete-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(255, 51, 102, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(255, 51, 102, 0.4);
         }
         
         .delete-btn:active {
-            transform: scale(0.98);
+            transform: translateY(0);
         }
         
         .empty-state {
@@ -518,8 +530,8 @@
             
             .delete-btn {
                 width: 100%;
-                justify-content: center;
-            }
+            justify-content: center;
+        }
         }
     </style>
 </head>
@@ -547,12 +559,14 @@
             <h2>📊 Progress</h2>
             <div class="progress" id="progressLog"></div>
             <div id="resultsSection"></div>
-        </div>
-        
+            </div>
+            
         <!-- File Management Section -->
         <div class="files-section">
-            <h2>📁 Files (Last 24 Hours)</h2>
-            <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
+            <div class="section-header">
+                <h2>📁 Files (Last 24 Hours)</h2>
+                <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
+            </div>
             <div id="filesContainer">
                 <div class="loading-files">
                     <span class="spinner"></span> Loading files...
@@ -600,7 +614,7 @@
                     btn.disabled = false;
                     btn.innerHTML = '🚀 Start Download';
                 }
-            } catch (error) {
+                } catch (error) {
                 alert('Network error: ' + error.message);
                 btn.disabled = false;
                 btn.innerHTML = '🚀 Start Download';
@@ -651,7 +665,7 @@
                 `;
                 return;
             }
-            
+
             let html = `
                 <div class="results">
                     <h3>✅ Complete!</h3>
@@ -705,32 +719,53 @@
                     return;
                 }
                 
-                let html = '<div class="files-grid">';
+                let html = `
+                    <div class="files-table-container">
+                        <table class="files-table">
+                            <thead>
+                                <tr>
+                                    <th>FILE NAME</th>
+                                    <th>LOCATION</th>
+                                    <th>SIZE</th>
+                                    <th>UPLOADED</th>
+                                    <th style="text-align: center;">ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
                 
                 data.files.forEach(file => {
                     const uploadTime = new Date(file.uploaded_at);
                     const timeAgo = getTimeAgo(uploadTime);
                     const badgeClass = file.location === 'supabase' ? 'file-badge supabase' : 'file-badge';
-                    const locationText = file.location === 'supabase' ? '☁️ Supabase' : '💾 Local';
+                    const locationText = file.location === 'supabase' ? 'Supabase' : 'Local';
+                    const locationIcon = file.location === 'supabase' ? '☁️' : '💾';
                     
                     html += `
-                        <div class="file-item">
-                            <div class="file-info">
-                                <div class="file-name">🎵 ${file.name}</div>
-                                <div class="file-meta">
-                                    <span class="${badgeClass}">${locationText}</span>
-                                    <span>📦 ${file.size_mb} MB</span>
-                                    <span>🕒 ${timeAgo}</span>
+                        <tr>
+                            <td>
+                                <div class="file-name-cell">
+                                    <span class="file-icon">🎵</span>
+                                    <span>${file.name}</span>
                                 </div>
-                            </div>
-                            <button class="delete-btn" onclick="deleteFile('${file.name}', '${file.location}')">
-                                🗑️ Delete
-                            </button>
-                        </div>
+                            </td>
+                            <td><span class="${badgeClass}">${locationIcon} ${locationText}</span></td>
+                            <td><strong>${file.size_mb} MB</strong></td>
+                            <td>${timeAgo}</td>
+                            <td style="text-align: center;">
+                                <button class="delete-btn" onclick="deleteFile('${file.name}', '${file.location}')">
+                                    🗑️ Delete
+                                </button>
+                            </td>
+                        </tr>
                     `;
                 });
                 
-                html += '</div>';
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
                 container.innerHTML = html;
                 
             } catch (error) {
@@ -745,10 +780,10 @@
             
             try {
                 const response = await fetch('/delete', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
                     body: JSON.stringify({
                         name: fileName,
                         location: location
