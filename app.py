@@ -173,7 +173,7 @@ def list_files():
 def delete_file():
     """Delete a file from local storage or Supabase"""
     try:
-    data = request.json
+     data = request.json
         file_name = data.get('name', '')
         location = data.get('location', '')
         
