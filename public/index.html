@@ -757,24 +757,35 @@
         
         function displayResults(results) {
             const resultsSection = document.getElementById('resultsSection');
-            
             if (!results) return;
-            
+
+            const total = Number(results.total_songs || 0);
+            const success = Number(results.successful_downloads || 0);
+            const failed = Number(results.failed_downloads || 0);
+            const uploads = Number(results.successful_uploads || 0);
+
+            const isError = !!results.error || (total > 0 && success === 0);
+            const isWarn = !isError && failed > 0;
+            const title = isError ? '❌ Failed' : (isWarn ? '⚠️ Completed with issues' : '✅ Complete!');
+            const containerClass = isError ? 'results error' : 'results';
+
             if (results.error) {
                 resultsSection.innerHTML = `
-                    <div class="results error">
-                        <h3>❌ Error</h3>
+                    <div class="${containerClass}">
+                        <h3>${title}</h3>
                         <p>${results.error}</p>
+                        <div class="result-item">🎵 Downloads: ${success}/${total}</div>
+                        <div class="result-item">☁️ Uploads: ${uploads}/${success}</div>
                     </div>
                 `;
                 return;
             }
 
             let html = `
-                <div class="results">
-                    <h3>✅ Complete!</h3>
-                    <div class="result-item">🎵 Downloads: ${results.successful_downloads}/${results.total_songs}</div>
-                    <div class="result-item">☁️ Uploads: ${results.successful_uploads}/${results.successful_downloads}</div>
+                <div class="${containerClass}">
+                    <h3>${title}</h3>
+                    <div class="result-item">🎵 Downloads: ${success}/${total}</div>
+                    <div class="result-item">☁️ Uploads: ${uploads}/${success}</div>
             `;
             
             if (results.public_urls && results.public_urls.length > 0) {
