@@ -1,0 +1,6 @@
+[phases.setup]
+aptPkgs = ["ffmpeg"]
+
+[start]
+cmd = "python app.py"
+
