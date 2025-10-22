@@ -511,6 +511,24 @@
             box-shadow: 0 0 30px rgba(131, 56, 236, 0.5);
         }
         
+        .delete-all-btn {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+        }
+        
+        .delete-all-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+        }
+        
         .loading-files {
             text-align: center;
             padding: 40px;
@@ -640,7 +658,11 @@
         <div class="files-section">
             <div class="section-header">
                 <h2>📁 Files (Last 24 Hours)</h2>
-                <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
+                    <button class="delete-all-btn" onclick="deleteAllLocal()" style="background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);">🗑️ Delete All Local</button>
+                    <button class="delete-all-btn" onclick="deleteAllSupabase()" style="background: linear-gradient(135deg, #ff922b 0%, #e67700 100%);">🗑️ Delete All Supabase</button>
+                </div>
             </div>
             <div id="filesContainer">
                 <div class="loading-files">
@@ -928,6 +950,61 @@
             if (diffMins < 60) return `${diffMins}m ago`;
             if (diffHours < 24) return `${diffHours}h ago`;
             return date.toLocaleDateString();
+        }
+        
+        // Bulk delete functions
+        async function deleteAllLocal() {
+            if (!confirm('⚠️ Are you sure you want to delete ALL local files from the last 24 hours?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/delete-all`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ location: 'local' })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showToast(`${data.message}`, 'success');
+                    loadFiles(); // Refresh the file list
+                } else {
+                    showToast(`Error: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showToast(`Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function deleteAllSupabase() {
+            if (!confirm('⚠️ Are you sure you want to delete ALL Supabase files from the last 24 hours?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/delete-all`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ location: 'supabase' })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showToast(`${data.message}`, 'success');
+                    loadFiles(); // Refresh the file list
+                } else {
+                    showToast(`Error: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showToast(`Network error: ${error.message}`, 'error');
+            }
         }
         
         // Load files when page loads

@@ -3,7 +3,7 @@ from flask_cors import CORS
 import threading
 import os
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from youtube_auto_downloader import YouTubeAutoDownloader
 from supabase_uploader import SupabaseUploader
 
@@ -204,6 +204,78 @@ def delete_file():
                 return jsonify({'error': f'Supabase deletion failed: {str(e)}'}), 500
         else:
             return jsonify({'error': 'Invalid location'}), 400
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/delete-all', methods=['POST'])
+def delete_all_files():
+    """Delete all files from a specific location (local or supabase) from last 24 hours"""
+    try:
+        data = request.json
+        location = data.get('location', '')
+        
+        if not location or location not in ['local', 'supabase']:
+            return jsonify({'error': 'Valid location required (local or supabase)'}), 400
+        
+        deleted_count = 0
+        errors = []
+        
+        if location == 'local':
+            # Delete all local audio files from last 24 hours
+            audio_folder = Path("Audios")
+            if audio_folder.exists():
+                cutoff_time = datetime.now() - timedelta(hours=24)
+                
+                for audio_file in audio_folder.glob("*.mp3"):
+                    try:
+                        # Check if file was modified in last 24 hours
+                        file_mtime = datetime.fromtimestamp(audio_file.stat().st_mtime)
+                        if file_mtime >= cutoff_time:
+                            audio_file.unlink()
+                            deleted_count += 1
+                    except Exception as e:
+                        errors.append(f"{audio_file.name}: {str(e)}")
+                        
+            return jsonify({
+                'success': True, 
+                'message': f'Deleted {deleted_count} local file(s)',
+                'deleted_count': deleted_count,
+                'errors': errors
+            })
+                
+        elif location == 'supabase':
+            # Delete all Supabase files from last 24 hours
+            try:
+                SUPABASE_URL = os.getenv("SUPABASE_URL", "https://aekvevvuanwzmjealdkl.supabase.co")
+                SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFla3ZldnZ1YW53em1qZWFsZGtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzExMjksImV4cCI6MjA3MTYwNzEyOX0.PZxoGAnv0UUeCndL9N4yYj0bgoSiDodcDxOPHZQWTxI")
+                SUPABASE_AUDIO_BUCKET = os.getenv("SUPABASE_AUDIO_BUCKET", "Sushant-KC more")
+
+                supabase_uploader = SupabaseUploader(SUPABASE_URL, SUPABASE_KEY)
+                
+                # List all files in bucket
+                files = supabase_uploader.supabase.storage.from_(SUPABASE_AUDIO_BUCKET).list()
+                
+                cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
+                files_to_delete = []
+                
+                for file in files:
+                    # Check if file was created in last 24 hours
+                    created_at = datetime.fromisoformat(file['created_at'].replace('Z', '+00:00'))
+                    if created_at >= cutoff_time:
+                        files_to_delete.append(file['name'])
+                
+                if files_to_delete:
+                    supabase_uploader.supabase.storage.from_(SUPABASE_AUDIO_BUCKET).remove(files_to_delete)
+                    deleted_count = len(files_to_delete)
+
+                return jsonify({
+                    'success': True,
+                    'message': f'Deleted {deleted_count} Supabase file(s)',
+                    'deleted_count': deleted_count
+                })
+            except Exception as e:
+                return jsonify({'error': f'Supabase bulk deletion failed: {str(e)}'}), 500
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
