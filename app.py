@@ -173,7 +173,7 @@ def list_files():
 def delete_file():
     """Delete a file from local storage or Supabase"""
     try:
-        data = request.json
+    data = request.json
         file_name = data.get('name', '')
         location = data.get('location', '')
         
@@ -204,7 +204,7 @@ def delete_file():
                 return jsonify({'error': f'Supabase deletion failed: {str(e)}'}), 500
         else:
             return jsonify({'error': 'Invalid location'}), 400
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -267,5 +267,34 @@ def download_songs(songs):
 
 if __name__ == '__main__':
     import os
+    import subprocess
+    import shutil
+    
+    # Debug: Check for ffmpeg at startup
+    print("\n" + "="*60)
+    print("🔍 FFMPEG DETECTION AT STARTUP")
+    print("="*60)
+    
+    ffmpeg_which = shutil.which('ffmpeg')
+    print(f"shutil.which('ffmpeg'): {ffmpeg_which}")
+    
+    try:
+        result = subprocess.run(['which', 'ffmpeg'], capture_output=True, text=True)
+        print(f"which ffmpeg: {result.stdout.strip() if result.returncode == 0 else 'NOT FOUND'}")
+    except:
+        print("which command failed")
+    
+    try:
+        result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"ffmpeg -version: {result.stdout.split(chr(10))[0]}")
+        else:
+            print("ffmpeg -version failed")
+    except Exception as e:
+        print(f"ffmpeg -version error: {e}")
+    
+    print(f"PATH: {os.environ.get('PATH', 'NOT SET')[:200]}...")
+    print("="*60 + "\n")
+    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
