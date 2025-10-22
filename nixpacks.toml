@@ -1,8 +1,8 @@
 providers = ["python"]
 
 [phases.setup]
-packages = ["ffmpeg"]
+nixPkgs = ["ffmpeg"]
 
 [start]
-cmd = "python3 app.py"
+cmd = "export PATH=\"/nix/var/nix/profiles/default/bin:$PATH\" && python3 app.py"
 
