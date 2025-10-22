@@ -12,15 +12,12 @@ mkdir -p Audios
 
 # Ensure ffmpeg exists on PATH if platform didn't add it
 if ! command -v ffmpeg >/dev/null 2>&1; then
-  if [ -x "/usr/bin/ffmpeg" ]; then
-    export PATH="/usr/bin:$PATH"
-  elif [ -x "/nix/store" ]; then
-    # try common nix locations
-    FFMPEG_BIN=$(command -v /nix/store/*-ffmpeg-*/bin/ffmpeg 2>/dev/null | head -n1)
-    if [ -n "$FFMPEG_BIN" ]; then
-      export PATH="$(dirname "$FFMPEG_BIN"):$PATH"
+  for p in /usr/bin/ffmpeg /usr/local/bin/ffmpeg /nix/store/*-ffmpeg-*/bin/ffmpeg; do
+    if [ -x "$p" ]; then
+      export PATH="$(dirname "$p"):$PATH"
+      break
     fi
-  fi
+  done
 fi
 
 echo "✅ Build complete!"

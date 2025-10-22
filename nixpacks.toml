@@ -1,8 +1,8 @@
 providers = ["python"]
 
 [phases.setup]
-nixPkgs = ["ffmpeg", "ffmpeg-full"]
+packages = ["ffmpeg"]
 
 [start]
-cmd = "python app.py"
+cmd = "python3 app.py"
 
