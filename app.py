@@ -12,9 +12,14 @@ app = Flask(__name__)
 # Enable CORS for Netlify frontend
 CORS(app, resources={
     r"/*": {
-        "origins": ["https://*.netlify.app", "http://localhost:*"],
+        "origins": [
+            "https://sonnixmusicsadder.netlify.app",
+            "https://*.netlify.app",
+            "http://localhost:*"
+        ],
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": False
     }
 })
 
@@ -168,7 +173,7 @@ def list_files():
 def delete_file():
     """Delete a file from local storage or Supabase"""
     try:
-        data = request.json
+    data = request.json
         file_name = data.get('name', '')
         location = data.get('location', '')
         
@@ -195,9 +200,9 @@ def delete_file():
                 supabase_uploader.supabase.storage.from_(SUPABASE_AUDIO_BUCKET).remove([file_name])
                 
                 return jsonify({'success': True, 'message': f'Deleted {file_name} from Supabase'})
-            except Exception as e:
+                except Exception as e:
                 return jsonify({'error': f'Supabase deletion failed: {str(e)}'}), 500
-        else:
+            else:
             return jsonify({'error': 'Invalid location'}), 400
         
     except Exception as e:
