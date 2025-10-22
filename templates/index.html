@@ -334,6 +334,159 @@
             100% { transform: rotate(360deg); }
         }
         
+        /* File Management Section */
+        .files-section {
+            margin-top: 50px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .files-section h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        
+        .files-grid {
+            display: grid;
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .files-grid::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .files-grid::-webkit-scrollbar-track {
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .files-grid::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 10px;
+        }
+        
+        .file-item {
+            background: rgba(5, 8, 18, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+            animation: slideIn 0.4s ease-out;
+        }
+        
+        .file-item:hover {
+            border-color: var(--primary);
+            background: rgba(0, 212, 255, 0.05);
+            transform: translateX(5px);
+        }
+        
+        .file-info {
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .file-name {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+        
+        .file-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .file-badge {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: var(--darker-bg);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .file-badge.supabase {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+        }
+        
+        .delete-btn {
+            background: linear-gradient(135deg, var(--error) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.2);
+        }
+        
+        .delete-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 51, 102, 0.4);
+        }
+        
+        .delete-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+            color: var(--darker-bg);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(131, 56, 236, 0.3);
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(131, 56, 236, 0.5);
+        }
+        
+        .loading-files {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
         /* Responsive design */
         @media (max-width: 768px) {
             .container {
@@ -351,6 +504,21 @@
             button {
                 font-size: 16px;
                 padding: 14px;
+            }
+            
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .file-info {
+                margin-right: 0;
+            }
+            
+            .delete-btn {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
@@ -379,6 +547,17 @@
             <h2>📊 Progress</h2>
             <div class="progress" id="progressLog"></div>
             <div id="resultsSection"></div>
+        </div>
+        
+        <!-- File Management Section -->
+        <div class="files-section">
+            <h2>📁 Files (Last 24 Hours)</h2>
+            <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
+            <div id="filesContainer">
+                <div class="loading-files">
+                    <span class="spinner"></span> Loading files...
+                </div>
+            </div>
         </div>
     </div>
 
@@ -501,6 +680,110 @@
             html += '</div>';
             resultsSection.innerHTML = html;
         }
+        
+        // File Management Functions
+        async function loadFiles() {
+            const container = document.getElementById('filesContainer');
+            container.innerHTML = '<div class="loading-files"><span class="spinner"></span> Loading files...</div>';
+            
+            try {
+                const response = await fetch('/files');
+                const data = await response.json();
+                
+                if (data.error) {
+                    container.innerHTML = `<div class="empty-state"><p>❌ Error: ${data.error}</p></div>`;
+                    return;
+                }
+                
+                if (data.files.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📂</div>
+                            <p>No files found in the last 24 hours</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '<div class="files-grid">';
+                
+                data.files.forEach(file => {
+                    const uploadTime = new Date(file.uploaded_at);
+                    const timeAgo = getTimeAgo(uploadTime);
+                    const badgeClass = file.location === 'supabase' ? 'file-badge supabase' : 'file-badge';
+                    const locationText = file.location === 'supabase' ? '☁️ Supabase' : '💾 Local';
+                    
+                    html += `
+                        <div class="file-item">
+                            <div class="file-info">
+                                <div class="file-name">🎵 ${file.name}</div>
+                                <div class="file-meta">
+                                    <span class="${badgeClass}">${locationText}</span>
+                                    <span>📦 ${file.size_mb} MB</span>
+                                    <span>🕒 ${timeAgo}</span>
+                                </div>
+                            </div>
+                            <button class="delete-btn" onclick="deleteFile('${file.name}', '${file.location}')">
+                                🗑️ Delete
+                            </button>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="empty-state"><p>❌ Network error: ${error.message}</p></div>`;
+            }
+        }
+        
+        async function deleteFile(fileName, location) {
+            if (!confirm(`Are you sure you want to delete "${fileName}" from ${location}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: fileName,
+                        location: location
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(`✅ ${data.message}`);
+                    loadFiles(); // Reload files list
+                } else {
+                    alert(`❌ Error: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`❌ Network error: ${error.message}`);
+            }
+        }
+        
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            return date.toLocaleDateString();
+        }
+        
+        // Load files when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFiles();
+        });
     </script>
 </body>
 </html> 

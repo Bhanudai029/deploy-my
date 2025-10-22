@@ -1,6 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 import threading
+import os
+from pathlib import Path
+from datetime import datetime, timedelta
 from youtube_auto_downloader import YouTubeAutoDownloader
+from supabase_uploader import SupabaseUploader
 
 app = Flask(__name__)
 
@@ -72,6 +76,108 @@ def download():
 def status():
     """Get current download status"""
     return jsonify(download_status)
+
+@app.route('/files')
+def list_files():
+    """List all files from local storage and Supabase (uploaded in last 24 hours)"""
+    try:
+        files = []
+        cutoff_time = datetime.now() - timedelta(hours=24)
+        
+        # Get local files
+        audio_folder = Path("Audios")
+        if audio_folder.exists():
+            for file_path in audio_folder.glob("*.mp3"):
+                file_stat = file_path.stat()
+                file_time = datetime.fromtimestamp(file_stat.st_mtime)
+                
+                if file_time >= cutoff_time:
+                    files.append({
+                        'name': file_path.name,
+                        'size': file_stat.st_size,
+                        'uploaded_at': file_time.isoformat(),
+                        'location': 'local',
+                        'size_mb': round(file_stat.st_size / (1024 * 1024), 2)
+                    })
+        
+        # Get Supabase files
+        try:
+            SUPABASE_URL = os.getenv("SUPABASE_URL", "https://aekvevvuanwzmjealdkl.supabase.co")
+            SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFla3ZldnZ1YW53em1qZWFsZGtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzExMjksImV4cCI6MjA3MTYwNzEyOX0.PZxoGAnv0UUeCndL9N4yYj0bgoSiDodcDxOPHZQWTxI")
+            
+            supabase_uploader = SupabaseUploader(SUPABASE_URL, SUPABASE_KEY)
+            
+            # List all files in the audio bucket
+            bucket_files = supabase_uploader.supabase.storage.from_('audio').list()
+            
+            for file_obj in bucket_files:
+                # Parse created_at timestamp
+                created_at_str = file_obj.get('created_at', '')
+                if created_at_str:
+                    file_time = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
+                    # Convert to local time (naive datetime for comparison)
+                    file_time = file_time.replace(tzinfo=None)
+                    
+                    if file_time >= cutoff_time:
+                        file_name = file_obj.get('name', '')
+                        public_url = supabase_uploader.get_public_url(file_name)
+                        
+                        files.append({
+                            'name': file_name,
+                            'size': file_obj.get('metadata', {}).get('size', 0),
+                            'uploaded_at': file_time.isoformat(),
+                            'location': 'supabase',
+                            'url': public_url,
+                            'size_mb': round(file_obj.get('metadata', {}).get('size', 0) / (1024 * 1024), 2)
+                        })
+        except Exception as e:
+            print(f"Error fetching Supabase files: {e}")
+        
+        # Sort by upload time (newest first)
+        files.sort(key=lambda x: x['uploaded_at'], reverse=True)
+        
+        return jsonify({'files': files})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/delete', methods=['POST'])
+def delete_file():
+    """Delete a file from local storage or Supabase"""
+    try:
+    data = request.json
+        file_name = data.get('name', '')
+        location = data.get('location', '')
+        
+        if not file_name or not location:
+            return jsonify({'error': 'File name and location required'}), 400
+        
+        if location == 'local':
+            # Delete from local storage
+            file_path = Path("Audios") / file_name
+            if file_path.exists():
+                file_path.unlink()
+                return jsonify({'success': True, 'message': f'Deleted {file_name} from local storage'})
+            else:
+                return jsonify({'error': 'File not found'}), 404
+                
+        elif location == 'supabase':
+            # Delete from Supabase
+            try:
+                SUPABASE_URL = os.getenv("SUPABASE_URL", "https://aekvevvuanwzmjealdkl.supabase.co")
+                SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFla3ZldnZ1YW53em1qZWFsZGtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzExMjksImV4cCI6MjA3MTYwNzEyOX0.PZxoGAnv0UUeCndL9N4yYj0bgoSiDodcDxOPHZQWTxI")
+                
+                supabase_uploader = SupabaseUploader(SUPABASE_URL, SUPABASE_KEY)
+                supabase_uploader.supabase.storage.from_('audio').remove([file_name])
+                
+                return jsonify({'success': True, 'message': f'Deleted {file_name} from Supabase'})
+                except Exception as e:
+                return jsonify({'error': f'Supabase deletion failed: {str(e)}'}), 500
+            else:
+            return jsonify({'error': 'Invalid location'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 def download_songs(songs):
     """Background task to download songs"""
