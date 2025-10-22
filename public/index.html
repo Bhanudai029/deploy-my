@@ -217,6 +217,23 @@
             font-family: 'Consolas', monospace;
             font-size: 13px;
         }
+        /* Dynamic loading bar at the top of the progress panel */
+        .progress::before {
+            content: '';
+            display: block;
+            height: 3px;
+            width: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary), var(--accent), transparent);
+            background-size: 200% 100%;
+            animation: progressLoading 1.2s linear infinite;
+            margin-bottom: 12px;
+            opacity: 0.7;
+        }
+        @keyframes progressLoading {
+            from { background-position: 200% 0; }
+            to { background-position: -200% 0; }
+        }
         
         .progress::-webkit-scrollbar {
             width: 8px;
@@ -238,8 +255,9 @@
             border-left: 3px solid var(--primary);
             padding-left: 12px;
             color: var(--text-secondary);
-            animation: slideIn 0.3s ease-out;
         }
+        .progress-item.fade-in { animation: fadeIn 0.25s ease-out both; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         
         .results {
             margin-top: 25px;
@@ -713,9 +731,10 @@
                 
                 // Update progress log
                 const progressLog = document.getElementById('progressLog');
-                progressLog.innerHTML = status.progress.map(msg => 
-                    `<div class="progress-item">${msg}</div>`
-                ).join('');
+                const newHtml = status.progress.map(msg => `<div class=\"progress-item fade-in\">${msg}</div>`).join('');
+                if (progressLog.innerHTML !== newHtml) {
+                    progressLog.innerHTML = newHtml;
+                }
                 
                 // Scroll to bottom
                 progressLog.scrollTop = progressLog.scrollHeight;
