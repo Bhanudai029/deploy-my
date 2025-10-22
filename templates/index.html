@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Auto Downloader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            resize: vertical;
+            min-height: 200px;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .example {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .example strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status-section {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .status-section.active {
+            display: block;
+        }
+        
+        .progress {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .progress-item {
+            padding: 8px;
+            margin-bottom: 5px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .results {
+            margin-top: 20px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .results.error {
+            background: #ffebee;
+        }
+        
+        .result-item {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .url-list {
+            margin-top: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .url-item {
+            padding: 8px;
+            margin-bottom: 8px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            word-break: break-all;
+            font-size: 13px;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 YouTube Auto Downloader</h1>
+        <p class="subtitle">Search, Download & Upload to Supabase</p>
+        
+        <div class="input-section">
+            <label for="songs">📝 Enter your songs (one per line):</label>
+            <textarea id="songs" placeholder="Paste your song list here..."></textarea>
+            
+            <div class="example">
+                <strong>💡 Example format:</strong>
+                1. Shape of You<br>
+                2. Blinding Lights<br>
+                3. Levitating<br>
+                4. Dance Monkey
+            </div>
+        </div>
+        
+        <button id="downloadBtn" onclick="startDownload()">🚀 Start Download</button>
+        
+        <div class="status-section" id="statusSection">
+            <h2 style="margin-bottom: 15px; color: #667eea;">📊 Progress</h2>
+            <div class="progress" id="progressLog"></div>
+            <div id="resultsSection"></div>
+        </div>
+    </div>
+    
+    <script>
+        let statusInterval = null;
+        
+        async function startDownload() {
+            const songsText = document.getElementById('songs').value.trim();
+            
+            if (!songsText) {
+                alert('Please enter some songs!');
+                return;
+            }
+            
+            // Disable button and show status
+            const btn = document.getElementById('downloadBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Processing...';
+            
+            document.getElementById('statusSection').classList.add('active');
+            document.getElementById('progressLog').innerHTML = '';
+            document.getElementById('resultsSection').innerHTML = '';
+            
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ songs: songsText })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Start polling for status
+                    statusInterval = setInterval(updateStatus, 1000);
+                } else {
+                    alert('Error: ' + data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = '🚀 Start Download';
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '🚀 Start Download';
+            }
+        }
+        
+        async function updateStatus() {
+            try {
+                const response = await fetch('/status');
+                const status = await response.json();
+                
+                // Update progress log
+                const progressLog = document.getElementById('progressLog');
+                progressLog.innerHTML = status.progress.map(msg => 
+                    `<div class="progress-item">${msg}</div>`
+                ).join('');
+                
+                // Scroll to bottom
+                progressLog.scrollTop = progressLog.scrollHeight;
+                
+                // Check if completed
+                if (status.completed) {
+                    clearInterval(statusInterval);
+                    
+                    const btn = document.getElementById('downloadBtn');
+                    btn.disabled = false;
+                    btn.innerHTML = '🚀 Start Download';
+                    
+                    // Show results
+                    displayResults(status.results);
+                }
+            } catch (error) {
+                console.error('Status update error:', error);
+            }
+        }
+        
+        function displayResults(results) {
+            const resultsSection = document.getElementById('resultsSection');
+            
+            if (!results) return;
+            
+            if (results.error) {
+                resultsSection.innerHTML = `
+                    <div class="results error">
+                        <h3 style="color: #c62828; margin-bottom: 10px;">❌ Error</h3>
+                        <p>${results.error}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="results">
+                    <h3 style="color: #2e7d32; margin-bottom: 15px;">✅ Complete!</h3>
+                    <div class="result-item">🎵 Downloads: ${results.successful_downloads}/${results.total_songs}</div>
+                    <div class="result-item">☁️ Uploads: ${results.successful_uploads}/${results.successful_downloads}</div>
+            `;
+            
+            if (results.public_urls && results.public_urls.length > 0) {
+                html += `
+                    <div class="url-list">
+                        <strong style="display: block; margin-bottom: 10px;">🌍 Public URLs:</strong>
+                `;
+                
+                results.public_urls.forEach(([filename, url], index) => {
+                    html += `
+                        <div class="url-item">
+                            <strong>${index + 1}. ${filename}</strong><br>
+                            <a href="${url}" target="_blank" style="color: #667eea;">${url}</a>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            resultsSection.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

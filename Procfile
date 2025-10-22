@@ -1,2 +1,2 @@
-worker: python youtube_auto_downloader.py
+web: python app.py
 
