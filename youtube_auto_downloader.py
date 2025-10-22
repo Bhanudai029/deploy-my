@@ -27,6 +27,13 @@ class YouTubeAutoDownloader:
         self.audio_folder.mkdir(parents=True, exist_ok=True)
         self.lock = threading.Lock()
         
+        # Find ffmpeg location
+        self.ffmpeg_location = self._find_ffmpeg()
+        if self.ffmpeg_location:
+            print(f"🎬 Found ffmpeg at: {self.ffmpeg_location}")
+        else:
+            print("⚠️  Warning: ffmpeg not found in PATH")
+        
         # YouTube API configuration
         self.youtube_api = None
         self.api_quota_exceeded = False
@@ -53,6 +60,28 @@ class YouTubeAutoDownloader:
             print(f"⚠️ Supabase initialization failed: {str(e)[:50]}...")
             print("📝 Downloads will work, but uploads will be skipped")
             self.enable_supabase = False
+    
+    def _find_ffmpeg(self):
+        """Find ffmpeg executable in common locations"""
+        import shutil
+        import glob
+        # First try shutil which checks PATH
+        ffmpeg_path = shutil.which('ffmpeg')
+        if ffmpeg_path:
+            return os.path.dirname(ffmpeg_path)
+        # Try common locations
+        common_paths = [
+            '/usr/bin',
+            '/usr/local/bin',
+            '/opt/homebrew/bin',
+        ]
+        # Also check nix store
+        nix_paths = glob.glob('/nix/store/*-ffmpeg-*/bin')
+        common_paths.extend(nix_paths)
+        for path in common_paths:
+            if os.path.isfile(os.path.join(path, 'ffmpeg')):
+                return path
+        return None
     
     def init_youtube_api(self):
         """Initialize YouTube API client with API key"""
@@ -549,9 +578,14 @@ class YouTubeAutoDownloader:
                 # Try to handle age-restricted content
                 '--age-limit', '0',  # No age limit
                 # Custom output template with clean song name
-                '-o', str(self.audio_folder / f'{clean_song_name}.%(ext)s'),
-                url
+                '-o', str(self.audio_folder / f'{clean_song_name}.%(ext)s')
             ]
+            
+            # Add ffmpeg location if found
+            if self.ffmpeg_location:
+                yt_dlp_options.extend(['--ffmpeg-location', self.ffmpeg_location])
+            
+            yt_dlp_options.append(url)
             
             start_time = time.time()
             
