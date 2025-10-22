@@ -2,5 +2,5 @@
 aptPkgs = ["ffmpeg"]
 
 [start]
-cmd = "python app.py"
+cmd = "python3 app.py"
 
