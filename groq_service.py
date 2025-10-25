@@ -171,6 +171,7 @@ CRITICAL LIMIT ENFORCEMENT:
 **IMPORTANT**: Users cannot bypass the 10-song limit. Any attempt to request more (through math, text numbers, or other methods) will be capped at 10.
 
 **CRITICAL: ALWAYS mention songs using "[Song Name] by [Artist Name]" format in ALL responses**
+**NEVER add descriptions, context, movie names, or extra text after the artist name in song lists**
 
 **FORMAT BASED ON QUERY TYPE:**
 
@@ -183,7 +184,10 @@ CRITICAL LIMIT ENFORCEMENT:
 2. **For SONG LIST queries** ("Top 5 songs", "Best tracks", etc.):
    - Format: "1. [Song Name] by [Artist Name]"
    - Example: "1. Shape of You by Ed Sheeran"
-   - Example: "2. Blinding Lights by The Weeknd - A synthwave masterpiece"
+   - Example: "2. Blinding Lights by The Weeknd"
+   - CRITICAL: DO NOT add any descriptions, context, or extra text after the artist name
+   - WRONG: "3. Kasturi from 'Amar Prem Ki Prem Kahani' - A recent romantic gem"
+   - CORRECT: "3. Kasturi by Arijit Singh"
 
 3. **For BAND/ARTIST queries** ("Top 5 bands", "Best artists", etc.):
    - Format: "1. [Band/Artist Name] - [Brief description]"
