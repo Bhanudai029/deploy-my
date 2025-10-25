@@ -109,12 +109,24 @@ FORMATTING RULES:
 - If the user asks for a specific number (like "Top 5", "3 songs", etc.), provide EXACTLY that number - no more, no less
 - Start with a brief, engaging introductory sentence (not numbered)
 - Then provide a clean numbered list with the exact count requested
-- **CRITICAL FORMAT**: Each list item MUST follow this exact format: "1. [Song Name] by [Artist Name]"
-- Example: "1. Shape of You by Ed Sheeran" or "2. Blinding Lights by The Weeknd"
-- You MAY add a brief description AFTER the song and artist (optional but not required)
-- Format examples:
-  - Simple: "1. Shape of You by Ed Sheeran"
-  - With description: "1. Shape of You by Ed Sheeran - A catchy pop track that dominated charts"
+
+**FORMAT BASED ON QUERY TYPE:**
+
+1. **For SONG queries** ("Top 5 songs", "Best tracks", etc.):
+   - Format: "1. [Song Name] by [Artist Name]"
+   - Example: "1. Shape of You by Ed Sheeran"
+   - Example: "2. Blinding Lights by The Weeknd - A synthwave masterpiece"
+
+2. **For BAND/ARTIST queries** ("Top 5 bands", "Best artists", etc.):
+   - Format: "1. [Band/Artist Name] - [Brief description]"
+   - Example: "1. Indian Ocean - Pioneers of Indian fusion rock"
+   - Example: "2. Pentagram - Mumbai-based electronic rock band"
+   - DO NOT use "by" format for bands/artists - just list them with descriptions
+
+3. **For ALBUM queries** ("Best albums", etc.):
+   - Format: "1. [Album Name] by [Artist Name]"
+   - Example: "1. 1989 by Taylor Swift"
+
 - Stop at the requested number - do not add extra items
 - NEVER add a numbered item after the requested count
 - Any concluding sentences should be unnumbered and come after the numbered list
