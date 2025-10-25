@@ -286,6 +286,54 @@ def parse_songs():
             "message": f"Parse error: {str(e)}"
         })
 
+@app.route('/storage-stats')
+def storage_stats():
+    """Get storage usage statistics for Supabase bucket"""
+    try:
+        SUPABASE_URL = os.getenv("SUPABASE_URL", "https://aekvevvuanwzmjealdkl.supabase.co")
+        SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFla3ZldnZ1YW53em1qZWFsZGtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzExMjksImV4cCI6MjA3MTYwNzEyOX0.PZxoGAnv0UUeCndL9N4yYj0bgoSiDodcDxOPHZQWTxI")
+        SUPABASE_AUDIO_BUCKET = os.getenv("SUPABASE_AUDIO_BUCKET", "Sushant-KC more")
+        
+        supabase_uploader = SupabaseUploader(SUPABASE_URL, SUPABASE_KEY)
+        
+        # List all files in bucket
+        files = supabase_uploader.supabase.storage.from_(SUPABASE_AUDIO_BUCKET).list()
+        
+        # Calculate total size
+        total_bytes = 0
+        file_count = 0
+        
+        for file_obj in files:
+            file_count += 1
+            meta = file_obj.get('metadata') or {}
+            if isinstance(meta, dict):
+                size_bytes = meta.get('size', 0)
+                total_bytes += size_bytes
+        
+        # Convert to GB
+        total_gb = total_bytes / (1024 * 1024 * 1024)
+        total_mb = total_bytes / (1024 * 1024)
+        
+        # Storage limit based on your plan (15GB)
+        limit_gb = 15.0  # Your storage limit
+        remaining_gb = limit_gb - total_gb
+        percentage_used = (total_gb / limit_gb) * 100 if limit_gb > 0 else 0
+        
+        return jsonify({
+            'success': True,
+            'total_bytes': total_bytes,
+            'total_mb': round(total_mb, 2),
+            'total_gb': round(total_gb, 3),
+            'limit_gb': limit_gb,
+            'remaining_gb': round(remaining_gb, 3),
+            'percentage_used': round(percentage_used, 2),
+            'file_count': file_count
+        })
+        
+    except Exception as e:
+        print(f"Error fetching storage stats: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/delete-all', methods=['POST'])
 def delete_all_files():
     """Delete all files from a specific location (local or supabase) from last 7 days"""

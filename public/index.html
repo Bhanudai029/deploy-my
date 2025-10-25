@@ -515,6 +515,61 @@
             box-shadow: 0 0 30px rgba(131, 56, 236, 0.5);
         }
         
+        /* Storage Stats */
+        .storage-stats {
+            background: linear-gradient(135deg, rgba(131, 56, 236, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .storage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .storage-title {
+            font-size: 1em;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .storage-details {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+        
+        .storage-bar-container {
+            width: 100%;
+            height: 12px;
+            background: rgba(5, 8, 18, 0.6);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 10px;
+            border: 1px solid var(--border);
+        }
+        
+        .storage-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success) 0%, var(--primary) 100%);
+            border-radius: 20px;
+            transition: width 0.5s ease, background 0.3s ease;
+        }
+        
+        .storage-bar.warning {
+            background: linear-gradient(90deg, #ffd700 0%, #ff8c00 100%);
+        }
+        
+        .storage-bar.danger {
+            background: linear-gradient(90deg, var(--error) 0%, var(--secondary) 100%);
+        }
+        
         .loading-files {
             text-align: center;
             padding: 40px;
@@ -679,6 +734,17 @@
             
         <!-- File Management Section -->
         <div class="files-section">
+            <!-- Storage Stats -->
+            <div class="storage-stats" id="storageStats" style="display: none;">
+                <div class="storage-header">
+                    <div class="storage-title">💾 Supabase Storage</div>
+                    <div class="storage-details" id="storageText">Loading...</div>
+                </div>
+                <div class="storage-bar-container">
+                    <div class="storage-bar" id="storageBar" style="width: 0%;"></div>
+                </div>
+            </div>
+            
             <div class="section-header">
                 <h2>📁 Files (Last 7 Days)</h2>
                 <div style="display: flex; gap: 10px;">
@@ -955,6 +1021,7 @@
                 if (response.ok) {
                     showToast(data.message, 'success');
                     loadFiles(); // Reload files list
+                    loadStorageStats(); // Refresh storage stats
                 } else {
                     showToast(data.error, 'error');
                 }
@@ -995,6 +1062,7 @@
                 if (response.ok && data.success) {
                     showToast(`${data.message}`, 'success');
                     loadFiles(); // Refresh the file list
+                    loadStorageStats(); // Refresh storage stats
                 } else {
                     showToast(`Error: ${data.error || 'Unknown error'}`, 'error');
                 }
@@ -1022,6 +1090,7 @@
                 if (response.ok && data.success) {
                     showToast(`${data.message}`, 'success');
                     loadFiles(); // Refresh the file list
+                    loadStorageStats(); // Refresh storage stats
                 } else {
                     showToast(`Error: ${data.error || 'Unknown error'}`, 'error');
                 }
@@ -1030,9 +1099,48 @@
             }
         }
         
+        // Storage Stats Functions
+        async function loadStorageStats() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/storage-stats`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const storageStats = document.getElementById('storageStats');
+                    const storageText = document.getElementById('storageText');
+                    const storageBar = document.getElementById('storageBar');
+                    
+                    // Show storage stats
+                    storageStats.style.display = 'block';
+                    
+                    // Update text
+                    const usedGB = data.total_gb;
+                    const limitGB = data.limit_gb;
+                    const remainingGB = data.remaining_gb;
+                    const percentage = data.percentage_used;
+                    
+                    storageText.textContent = `${usedGB.toFixed(2)} GB / ${limitGB} GB used (${remainingGB.toFixed(2)} GB remaining)`;
+                    
+                    // Update progress bar
+                    storageBar.style.width = `${Math.min(percentage, 100)}%`;
+                    
+                    // Change color based on usage
+                    storageBar.classList.remove('warning', 'danger');
+                    if (percentage >= 90) {
+                        storageBar.classList.add('danger');
+                    } else if (percentage >= 70) {
+                        storageBar.classList.add('warning');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading storage stats:', error);
+            }
+        }
+        
         // Load files when page loads
         document.addEventListener('DOMContentLoaded', () => {
             loadFiles();
+            loadStorageStats();
         });
         
         // AI Chat Functions
