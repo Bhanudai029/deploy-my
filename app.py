@@ -78,6 +78,12 @@ def download():
     if not songs:
         return jsonify({'error': 'No valid songs found'}), 400
     
+    # Limit to 10 songs maximum
+    if len(songs) > 10:
+        return jsonify({
+            'error': f'Maximum 10 songs allowed. You provided {len(songs)} songs. Please limit to 10 songs or less.'
+        }), 400
+    
     # Reset status
     download_status = {
         'running': True,

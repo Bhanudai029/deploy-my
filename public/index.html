@@ -809,6 +809,13 @@
                 showToast('Please enter some songs!', 'error');
                 return;
             }
+            
+            // Count number of songs (lines)
+            const songLines = songsText.split('\n').filter(line => line.trim() !== '');
+            if (songLines.length > 10) {
+                showToast(`❌ Maximum 10 songs allowed! You entered ${songLines.length} songs. Please remove ${songLines.length - 10} songs.`, 'error');
+                return;
+            }
 
             // Disable button and show status
             const btn = document.getElementById('downloadBtn');
@@ -1268,8 +1275,15 @@
                 return;
             }
             
+            // Limit to 10 songs
+            let songsToDownload = currentAIDetectedSongs;
+            if (currentAIDetectedSongs.length > 10) {
+                showToast(`⚠️ Limiting to first 10 songs (detected ${currentAIDetectedSongs.length}, max is 10)`, 'info');
+                songsToDownload = currentAIDetectedSongs.slice(0, 10);
+            }
+            
             // Format songs for download
-            const songList = currentAIDetectedSongs
+            const songList = songsToDownload
                 .map(song => song.full_query)
                 .join('\n');
             
@@ -1277,7 +1291,7 @@
             document.getElementById('songs').value = songList;
             
             // Show toast that download is starting
-            showToast(`✅ Starting download for ${currentAIDetectedSongs.length} songs!`, 'success');
+            showToast(`✅ Starting download for ${songsToDownload.length} songs!`, 'success');
             
             // Scroll to progress section
             setTimeout(() => {
