@@ -94,10 +94,10 @@ def status():
 
 @app.route('/files')
 def list_files():
-    """List all files from local storage and Supabase (uploaded in last 24 hours)"""
+    """List all files from local storage and Supabase (uploaded in last 7 days)"""
     try:
         files = []
-        cutoff_time = datetime.now() - timedelta(hours=24)
+        cutoff_time = datetime.now() - timedelta(days=7)
         
         # Get local files
         audio_folder = Path("Audios")
@@ -210,7 +210,7 @@ def delete_file():
 
 @app.route('/delete-all', methods=['POST'])
 def delete_all_files():
-    """Delete all files from a specific location (local or supabase) from last 24 hours"""
+    """Delete all files from a specific location (local or supabase) from last 7 days"""
     try:
         data = request.json
         location = data.get('location', '')
@@ -222,10 +222,10 @@ def delete_all_files():
         errors = []
         
         if location == 'local':
-            # Delete all local audio files from last 24 hours
+            # Delete all local audio files from last 7 days
             audio_folder = Path("Audios")
             if audio_folder.exists():
-                cutoff_time = datetime.now() - timedelta(hours=24)
+                cutoff_time = datetime.now() - timedelta(days=7)
                 
                 for audio_file in audio_folder.glob("*.mp3"):
                     try:
@@ -245,7 +245,7 @@ def delete_all_files():
             })
                 
         elif location == 'supabase':
-            # Delete all Supabase files from last 24 hours
+            # Delete all Supabase files from last 7 days
             try:
                 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://aekvevvuanwzmjealdkl.supabase.co")
                 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFla3ZldnZ1YW53em1qZWFsZGtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzExMjksImV4cCI6MjA3MTYwNzEyOX0.PZxoGAnv0UUeCndL9N4yYj0bgoSiDodcDxOPHZQWTxI")
@@ -256,7 +256,7 @@ def delete_all_files():
                 # List all files in bucket
                 files = supabase_uploader.supabase.storage.from_(SUPABASE_AUDIO_BUCKET).list()
                 
-                cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
+                cutoff_time = datetime.now(timezone.utc) - timedelta(days=7)
                 files_to_delete = []
                 
                 for file in files:
