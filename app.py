@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from youtube_auto_downloader import YouTubeAutoDownloader
 from supabase_uploader import SupabaseUploader
-from groq_service import fetch_music_query_response, read_search_counter
+from groq_service import fetch_music_query_response
 from song_parser import parse_songs_from_ai_response
 
 # Load environment variables from .env file
@@ -288,22 +288,33 @@ def parse_songs():
 
 @app.route('/search-counter-stats')
 def search_counter_stats():
-    """Get SerpAPI search counter statistics"""
+    """Get SerpAPI search counter statistics from Supabase"""
     try:
-        counter = read_search_counter()
-        remaining = counter['maxSearches'] - counter['totalSearches']
-        percentage_used = (counter['totalSearches'] / counter['maxSearches']) * 100 if counter['maxSearches'] > 0 else 0
+        # Use the Supabase connection from the ai-music-agent project
+        SUPABASE_URL = os.getenv("AI_SUPABASE_URL", "https://pcunwjpnybmcepkvfggg.supabase.co")
+        SUPABASE_KEY = os.getenv("AI_SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjdW53anBueWJtY2Vwa3ZmZ2dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5OTI0ODYsImV4cCI6MjA3NDU2ODQ4Nn0.6ZBEfn8o8xvFt5DJ1U5rCbv6nB2GjCbcXHWkcP-IMM8")
+        
+        # Create a Supabase client for the ai-music-agent database
+        from supabase import create_client
+        ai_supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        
+        # Fetch counter from api_usage table
+        response = ai_supabase.table('api_usage').select('search_count').eq('id', 'main').single().execute()
+        
+        search_count = response.data.get('search_count', 0) if response.data else 0
+        max_searches = 250
+        remaining = max_searches - search_count
+        percentage_used = (search_count / max_searches) * 100 if max_searches > 0 else 0
         
         return jsonify({
             'success': True,
-            'totalSearches': counter['totalSearches'],
-            'maxSearches': counter['maxSearches'],
+            'totalSearches': search_count,
+            'maxSearches': max_searches,
             'remaining': remaining,
-            'percentage_used': round(percentage_used, 2),
-            'lastReset': counter.get('lastReset', 'Unknown')
+            'percentage_used': round(percentage_used, 2)
         })
     except Exception as e:
-        print(f"Error fetching search counter: {e}")
+        print(f"Error fetching search counter from Supabase: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/storage-stats')

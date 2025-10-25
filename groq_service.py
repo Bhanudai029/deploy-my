@@ -44,15 +44,33 @@ def read_search_counter():
         return {'totalSearches': 0, 'maxSearches': 250, 'lastReset': datetime.now().isoformat()}
 
 def increment_search_counter():
-    """Increment the search counter"""
+    """Increment the search counter in Supabase"""
     try:
+        from supabase import create_client
+        
+        SUPABASE_URL = os.getenv("AI_SUPABASE_URL", "https://pcunwjpnybmcepkvfggg.supabase.co")
+        SUPABASE_KEY = os.getenv("AI_SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjdW53anBueWJtY2Vwa3ZmZ2dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5OTI0ODYsImV4cCI6MjA3NDU2ODQ4Nn0.6ZBEfn8o8xvFt5DJ1U5rCbv6nB2GjCbcXHWkcP-IMM8")
+        
+        ai_supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        
+        # Get current count
+        response = ai_supabase.table('api_usage').select('search_count').eq('id', 'main').single().execute()
+        current_count = response.data.get('search_count', 0) if response.data else 0
+        
+        # Increment
+        new_count = min(current_count + 1, 250)  # Cap at 250
+        
+        # Update in Supabase
+        ai_supabase.table('api_usage').update({'search_count': new_count, 'updated_at': datetime.now().isoformat()}).eq('id', 'main').execute()
+        
+        return {'totalSearches': new_count, 'maxSearches': 250}
+    except Exception as e:
+        print(f"❌ Error incrementing counter in Supabase: {e}")
+        # Fallback to local file
         counter = read_search_counter()
         counter['totalSearches'] += 1
         COUNTER_FILE.write_text(json.dumps(counter, indent=2))
         return counter
-    except Exception as e:
-        print(f"❌ Error incrementing counter: {e}")
-        return read_search_counter()
 
 def get_current_datetime():
     """Get current date and time information"""
