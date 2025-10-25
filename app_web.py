@@ -9,6 +9,8 @@ import os
 import re
 import requests
 import time
+from groq_service import fetch_music_query_response
+from song_parser import parse_songs_from_ai_response, format_songs_for_search
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -156,7 +158,7 @@ def search_youtube_video(song_name: str, max_retries: int = 2) -> str | None:
                 
 @app.route("/")
 def index():
-    return render_template("index_web.html")
+    return render_template("index.html")
 
 def setup_selenium_driver():
     """Setup headless Chrome driver for Selenium with aggressive memory optimization."""
@@ -599,6 +601,73 @@ def cleanup_endpoint():
         return jsonify({"success": True, "message": "Memory cleanup completed"})
     except Exception as e:
         return jsonify({"success": False, "message": f"Cleanup error: {str(e)}"})
+
+@app.route("/api/ai-chat", methods=["POST"])
+def ai_chat():
+    """AI Music Assistant endpoint - handles music-related queries"""
+    try:
+        data = request.get_json()
+        query = data.get("query", "")
+        
+        if not query.strip():
+            return jsonify({
+                "success": False,
+                "message": "Please provide a query"
+            })
+        
+        print(f"🎵 AI Chat Query: {query}")
+        
+        # Get AI response using Groq service
+        response = fetch_music_query_response(query)
+        
+        # Parse songs from the AI response
+        detected_songs = parse_songs_from_ai_response(response['text'])
+        
+        print(f"✅ AI response generated, detected {len(detected_songs)} songs")
+        
+        return jsonify({
+            "success": True,
+            "response": response['text'],
+            "sources": response['sources'],
+            "detected_songs": detected_songs,
+            "song_count": len(detected_songs)
+        })
+        
+    except Exception as e:
+        print(f"❌ AI Chat Error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"AI error: {str(e)}"
+        })
+
+@app.route("/api/parse-songs", methods=["POST"])
+def parse_songs():
+    """Parse songs from AI response text"""
+    try:
+        data = request.get_json()
+        text = data.get("text", "")
+        
+        if not text.strip():
+            return jsonify({
+                "success": False,
+                "message": "No text provided"
+            })
+        
+        # Parse songs from the text
+        songs = parse_songs_from_ai_response(text)
+        
+        return jsonify({
+            "success": True,
+            "songs": songs,
+            "count": len(songs)
+        })
+        
+    except Exception as e:
+        print(f"❌ Parse Songs Error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"Parse error: {str(e)}"
+        })
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

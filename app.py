@@ -6,6 +6,8 @@ from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from youtube_auto_downloader import YouTubeAutoDownloader
 from supabase_uploader import SupabaseUploader
+from groq_service import fetch_music_query_response
+from song_parser import parse_songs_from_ai_response
 
 app = Flask(__name__)
 
@@ -203,10 +205,77 @@ def delete_file():
             except Exception as e:
                 return jsonify({'error': f'Supabase deletion failed: {str(e)}'}), 500
         else:
-            return jsonify({'error': 'Invalid location'}), 400
+                return jsonify({'error': 'Invalid location'}), 400
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route("/api/ai-chat", methods=["POST"])
+def ai_chat():
+    """AI Music Assistant endpoint - handles music-related queries"""
+    try:
+        data = request.get_json()
+        query = data.get("query", "")
+        
+        if not query.strip():
+            return jsonify({
+                "success": False,
+                "message": "Please provide a query"
+            })
+        
+        print(f"🎵 AI Chat Query: {query}")
+        
+        # Get AI response using Groq service
+        response = fetch_music_query_response(query)
+        
+        # Parse songs from the AI response
+        detected_songs = parse_songs_from_ai_response(response['text'])
+        
+        print(f"✅ AI response generated, detected {len(detected_songs)} songs")
+        
+        return jsonify({
+            "success": True,
+            "response": response['text'],
+            "sources": response['sources'],
+            "detected_songs": detected_songs,
+            "song_count": len(detected_songs)
+        })
+        
+    except Exception as e:
+        print(f"❌ AI Chat Error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"AI error: {str(e)}"
+        })
+
+@app.route("/api/parse-songs", methods=["POST"])
+def parse_songs():
+    """Parse songs from AI response text"""
+    try:
+        data = request.get_json()
+        text = data.get("text", "")
+        
+        if not text.strip():
+            return jsonify({
+                "success": False,
+                "message": "No text provided"
+            })
+        
+        # Parse songs from the text
+        songs = parse_songs_from_ai_response(text)
+        
+        return jsonify({
+            "success": True,
+            "songs": songs,
+            "count": len(songs)
+        })
+        
+    except Exception as e:
+        print(f"❌ Parse Songs Error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"Parse error: {str(e)}"
+        })
 
 @app.route('/delete-all', methods=['POST'])
 def delete_all_files():

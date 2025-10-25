@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonnix - AI Music Assistant + YouTube Downloader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #A6877D 0%, #D4A59A 50%, #F5E6D3 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(184, 161, 216, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(244, 194, 194, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.05); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(40px, 10px) scale(1.02); }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 25px 70px rgba(166, 135, 125, 0.25), 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px 50px;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #B8A1D8 0%, #A6877D 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.8rem;
+            margin-bottom: 12px;
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: #6B5B52;
+            text-align: center;
+            margin-bottom: 35px;
+            font-size: 1.15rem;
+            font-weight: 500;
+        }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid rgba(166, 135, 125, 0.2);
+            padding-bottom: 10px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px 12px 0 0;
+            background: rgba(166, 135, 125, 0.08);
+            color: #6B5B52;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #B8A1D8 0%, #A6877D 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(184, 161, 216, 0.3);
+        }
+
+        .tab-button:hover:not(.active) {
+            background: rgba(184, 161, 216, 0.15);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* AI Chat Styles */
+        .ai-chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chat-input-group {
+            position: relative;
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 18px 100px 18px 18px;
+            border: 2px solid rgba(166, 135, 125, 0.2);
+            border-radius: 16px;
+            font-size: 1.05rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            color: #4A3F37;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #B8A1D8;
+            box-shadow: 0 0 0 4px rgba(184, 161, 216, 0.1);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .send-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #B8A1D8 0%, #A6877D 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 6px 15px rgba(184, 161, 216, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .ai-response-container {
+            background: linear-gradient(135deg, rgba(184, 161, 216, 0.08) 0%, rgba(245, 230, 211, 0.15) 100%);
+            border-left: 4px solid #B8A1D8;
+            padding: 24px;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(184, 161, 216, 0.1);
+            display: none;
+        }
+
+        .ai-response-container.show {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .ai-response-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            color: #4A3F37;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .ai-response-text {
+            color: #4A3F37;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            font-size: 1.02rem;
+        }
+
+        .download-ai-songs-btn {
+            width: 100%;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+            display: none;
+        }
+
+        .download-ai-songs-btn.show {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .download-ai-songs-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(76, 175, 80, 0.4);
+        }
+
+        .download-ai-songs-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .song-count-badge {
+            background: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #B8A1D8;
+            font-weight: 700;
+        }
+
+        /* Manual Search Styles */
+        .input-section {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            color: #4A3F37;
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 1.05rem;
+        }
+        
+        .example {
+            background: linear-gradient(135deg, rgba(184, 161, 216, 0.1) 0%, rgba(245, 230, 211, 0.2) 100%);
+            border-left: 4px solid #B8A1D8;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.92rem;
+            color: #4A3F37;
+            box-shadow: 0 4px 15px rgba(184, 161, 216, 0.1);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 18px;
+            border: 2px solid rgba(166, 135, 125, 0.2);
+            border-radius: 16px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            color: #4A3F37;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #B8A1D8;
+            box-shadow: 0 0 0 4px rgba(184, 161, 216, 0.1);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .button-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .primary-btn {
+            background: linear-gradient(135deg, #B8A1D8 0%, #A6877D 100%);
+            color: white;
+            box-shadow: 0 6px 20px rgba(184, 161, 216, 0.3);
+        }
+
+        .primary-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(184, 161, 216, 0.4);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .secondary-btn {
+            background: rgba(166, 135, 125, 0.1);
+            color: #6B5B52;
+            border: 2px solid rgba(166, 135, 125, 0.2);
+        }
+
+        .secondary-btn:hover {
+            background: rgba(166, 135, 125, 0.15);
+            border-color: rgba(166, 135, 125, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            text-align: center;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .status.success {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(184, 161, 216, 0.1) 100%);
+            color: #2D5F2E;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            display: block;
+        }
+
+        .status.error {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15) 0%, rgba(166, 135, 125, 0.1) 100%);
+            color: #8B3A3A;
+            border: 2px solid rgba(244, 67, 54, 0.3);
+            display: block;
+        }
+
+        .status.loading {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(245, 230, 211, 0.2) 100%);
+            color: #8B6B00;
+            border: 2px solid rgba(255, 193, 7, 0.3);
+            display: block;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .results-header {
+            background: linear-gradient(135deg, #B8A1D8 0%, #A6877D 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(184, 161, 216, 0.3);
+        }
+        
+        .result-item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(245, 230, 211, 0.3) 100%);
+            border-left: 4px solid #B8A1D8;
+            padding: 20px;
+            margin-bottom: 14px;
+            border-radius: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(166, 135, 125, 0.1);
+        }
+
+        .result-item:hover {
+            transform: translateX(8px);
+            box-shadow: 0 8px 25px rgba(184, 161, 216, 0.2);
+            border-left-color: #C9B3E8;
+        }
+        
+        .result-item.failed {
+            border-left-color: #E89999;
+            opacity: 0.75;
+        }
+
+        .result-number {
+            display: inline-block;
+            background: linear-gradient(135deg, #B8A1D8 0%, #A6877D 100%);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: bold;
+            margin-right: 12px;
+            box-shadow: 0 4px 10px rgba(184, 161, 216, 0.3);
+        }
+
+        .result-song {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4A3F37;
+            margin-bottom: 10px;
+        }
+
+        .result-url {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.88rem;
+            word-break: break-all;
+            color: #B8A1D8;
+            border: 1px solid rgba(184, 161, 216, 0.2);
+        }
+
+        .result-url a {
+            color: #B8A1D8;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .result-url a:hover {
+            color: #9580B8;
+            text-decoration: underline;
+        }
+
+        .result-failed {
+            color: #C86666;
+            font-weight: 600;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 25px;
+                border-radius: 20px;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .tab-button {
+                padding: 12px 16px;
+                font-size: 0.95rem;
+            }
+
+            .action-btn {
+                padding: 14px 24px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Sonnix - AI Music Assistant</h1>
+        <p class="subtitle">Discover music with AI, then download instantly</p>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="switchTab('ai-chat')">🤖 AI Music Discovery</button>
+            <button class="tab-button" onclick="switchTab('manual-search')">📝 Manual Search</button>
+        </div>
+
+        <!-- AI Chat Tab -->
+        <div id="ai-chat-tab" class="tab-content active">
+            <div class="ai-chat-container">
+                <div class="input-section">
+                    <label>Ask Sonnix about any music:</label>
+                    <div class="example">
+                        Try: "Top 5 phonk songs" or "Best Taylor Swift albums" or "Recommend some jazz tracks"
+                    </div>
+                    <div class="chat-input-group">
+                        <input type="text" 
+                               class="chat-input" 
+                               id="aiChatInput" 
+                               placeholder="Ask about songs, artists, albums, genres..." 
+                               onkeypress="if(event.key==='Enter') askAI()">
+                        <button class="send-btn" id="aiSendBtn" onclick="askAI()">Ask AI</button>
+                    </div>
+                </div>
+
+                <div id="aiResponseContainer" class="ai-response-container">
+                    <div class="ai-response-header">
+                        🎵 Sonnix's Response
+                        <span id="songCountBadge" class="song-count-badge" style="display:none;"></span>
+                    </div>
+                    <div id="aiResponseText" class="ai-response-text"></div>
+                </div>
+
+                <button id="downloadAiSongsBtn" class="download-ai-songs-btn" onclick="downloadFromAI()">
+                    🎧 Start Downloading These Songs
+                </button>
+            </div>
+        </div>
+
+        <!-- Manual Search Tab -->
+        <div id="manual-search-tab" class="tab-content">
+            <div class="input-section">
+                <label for="songInput">Enter Song List (numbered format):</label>
+                <div class="example">
+                    Example:<br>
+                    1. Shape of You<br>
+                    2. See You Again<br>
+                    3. Dream
+                </div>
+                <textarea 
+                    id="songInput" 
+                    placeholder="Paste your numbered song list here...&#10;&#10;1. Shape of You&#10;2. See You Again&#10;3. Dream"
+                ></textarea>
+            </div>
+
+            <div class="button-container">
+                <button class="action-btn primary-btn" id="searchBtn" onclick="searchSongs()">
+                    <span>Search YouTube</span>
+                </button>
+                <button class="action-btn secondary-btn" onclick="clearAll()">
+                    <span>Clear</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Status and Results (shared by both tabs) -->
+        <div id="status" class="status"></div>
+
+        <div id="results" class="results">
+            <div class="results-header">
+                <h2 id="resultsTitle">Search Results</h2>
+            </div>
+            <div id="resultsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentAIDetectedSongs = [];
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            if (tabName === 'ai-chat') {
+                document.getElementById('ai-chat-tab').classList.add('active');
+                document.querySelectorAll('.tab-button')[0].classList.add('active');
+            } else {
+                document.getElementById('manual-search-tab').classList.add('active');
+                document.querySelectorAll('.tab-button')[1].classList.add('active');
+            }
+
+            // Clear results when switching tabs
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('status').className = 'status';
+        }
+
+        // AI Chat Functions
+        async function askAI() {
+            const input = document.getElementById('aiChatInput');
+            const query = input.value.trim();
+            const sendBtn = document.getElementById('aiSendBtn');
+            const responseContainer = document.getElementById('aiResponseContainer');
+            const responseText = document.getElementById('aiResponseText');
+            const downloadBtn = document.getElementById('downloadAiSongsBtn');
+            const songCountBadge = document.getElementById('songCountBadge');
+            const status = document.getElementById('status');
+
+            if (!query) {
+                showStatus('error', 'Please enter a music-related question!');
+                return;
+            }
+
+            // Show loading state
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Thinking...';
+            responseContainer.classList.remove('show');
+            downloadBtn.classList.remove('show');
+            showStatus('loading', 'AI is thinking about your query...');
+
+            try {
+                const response = await fetch('/api/ai-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Display AI response
+                    responseText.textContent = data.response;
+                    responseContainer.classList.add('show');
+
+                    // Store detected songs
+                    currentAIDetectedSongs = data.detected_songs || [];
+
+                    // Show download button if songs were detected
+                    if (currentAIDetectedSongs.length > 0) {
+                        downloadBtn.classList.add('show');
+                        songCountBadge.style.display = 'inline-block';
+                        songCountBadge.textContent = `${currentAIDetectedSongs.length} songs detected`;
+                    } else {
+                        songCountBadge.style.display = 'none';
+                    }
+
+                    showStatus('success', '✨ AI response ready!');
+                } else {
+                    showStatus('error', data.message || 'AI request failed!');
+                }
+            } catch (error) {
+                showStatus('error', 'Network error! Please try again.');
+                console.error('Error:', error);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Ask AI';
+            }
+        }
+
+        // Download songs from AI results
+        async function downloadFromAI() {
+            if (currentAIDetectedSongs.length === 0) {
+                showStatus('error', 'No songs detected in AI response!');
+                return;
+            }
+
+            // Format songs for search API
+            const songList = currentAIDetectedSongs
+                .map((song, i) => `${i + 1}. ${song.full_query}`)
+                .join('\n');
+
+            console.log('Formatted song list for search:', songList);
+
+            // Trigger the search
+            document.getElementById('songInput').value = songList;
+            switchTab('manual-search');
+            await searchSongs();
+        }
+
+        // Manual search functions
+        async function searchSongs() {
+            const songInput = document.getElementById('songInput').value;
+            const searchBtn = document.getElementById('searchBtn');
+            const status = document.getElementById('status');
+            const results = document.getElementById('results');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            if (!songInput.trim()) {
+                showStatus('error', 'Please enter at least one song!');
+                return;
+            }
+            
+            searchBtn.disabled = true;
+            searchBtn.innerHTML = '<span><span class="spinner"></span> Searching...</span>';
+            results.classList.remove('show');
+            showStatus('loading', 'Searching YouTube for your songs...');
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        songs: songInput
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('success', `Found ${data.results.filter(r => r.status === 'success').length} out of ${data.total} songs!`);
+                    displayResults(data.results);
+                } else {
+                    showStatus('error', data.message || 'Search failed!');
+                }
+            } catch (error) {
+                showStatus('error', 'Network error! Please try again.');
+                console.error('Error:', error);
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.innerHTML = '<span>Search YouTube</span>';
+            }
+        }
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('resultsContainer');
+            const resultsDiv = document.getElementById('results');
+
+            resultsContainer.innerHTML = '';
+
+            results.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = `result-item ${result.status === 'failed' ? 'failed' : ''}`;
+
+                if (result.status === 'success') {
+                    resultItem.innerHTML = `
+                        <div class="result-song">
+                            <span class="result-number">${result.number}</span>
+                            ${result.song}
+                        </div>
+                        <div class="result-url">
+                            <a href="${result.url}" target="_blank">${result.url}</a>
+                        </div>
+                    `;
+                } else {
+                    resultItem.innerHTML = `
+                        <div class="result-song">
+                            <span class="result-number">${result.number}</span>
+                            ${result.song}
+                        </div>
+                        <div class="result-failed">
+                            ❌ No video found
+                        </div>
+                    `;
+                }
+
+                resultsContainer.appendChild(resultItem);
+            });
+
+            resultsDiv.classList.add('show');
+        }
+
+        function showStatus(type, message) {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+
+        function clearAll() {
+            document.getElementById('songInput').value = '';
+            document.getElementById('status').className = 'status';
+            document.getElementById('results').classList.remove('show');
+        }
+    </script>
+</body>
+</html>

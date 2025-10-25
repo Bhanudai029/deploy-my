@@ -351,6 +351,11 @@
             100% { transform: rotate(360deg); }
         }
         
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(0, 212, 255, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(0, 212, 255, 0.6), 0 10px 40px rgba(0, 212, 255, 0.4); }
+        }
+        
         /* File Management Section */
         .files-section {
             margin-top: 50px;
@@ -614,8 +619,45 @@
         <h1>🎵 YouTube Auto Downloader</h1>
         <p class="subtitle">Search, Download & Upload to Supabase</p>
         
+        <!-- AI Music Discovery Section -->
         <div class="input-section">
-            <label for="songs">📝 Enter your songs (one per line):</label>
+            <label for="aiQuery">🤖 Ask AI for Music Recommendations:</label>
+            <div style="position: relative;">
+                <input type="text" id="aiQuery" 
+                       placeholder="Try: 'Top 5 phonk songs' or 'Best Taylor Swift albums'" 
+                       style="width: 100%; padding: 18px; padding-right: 120px; border: 2px solid var(--border); border-radius: 14px; font-size: 16px; background: rgba(5, 8, 18, 0.6); color: var(--text-primary); transition: all 0.3s ease;"
+                       onkeypress="if(event.key==='Enter') askAI()"
+                       onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 20px rgba(0, 212, 255, 0.3)'"
+                       onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none'">
+                <button onclick="askAI()" id="aiAskBtn"
+                        style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 10px 20px; background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); border: none; border-radius: 8px; color: var(--darker-bg); font-weight: 700; cursor: pointer; width: auto; box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;"
+                        onmouseover="this.style.transform='translateY(-50%) scale(1.05)'"
+                        onmouseout="this.style.transform='translateY(-50%) scale(1)'">Ask AI</button>
+            </div>
+            
+            <!-- AI Response Box -->
+            <div id="aiResponseBox" style="display: none; margin-top: 20px; background: linear-gradient(135deg, rgba(131, 56, 236, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 12px; padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <span style="font-size: 1.1em; font-weight: 700; color: var(--primary);">🎵 AI Response</span>
+                    <span id="songCountBadge" style="display: none; background: rgba(0, 212, 255, 0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.85em; color: var(--primary); font-weight: 600;"></span>
+                </div>
+                <div id="aiResponseText" style="color: var(--text-secondary); line-height: 1.8; white-space: pre-wrap; font-size: 0.95em;"></div>
+            </div>
+            
+            <!-- Download AI Songs Button -->
+            <button id="downloadAiBtn" onclick="downloadFromAI()" style="display: none; margin-top: 20px; background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%); box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);">
+                🎧 Start Downloading These Songs
+            </button>
+            
+            <div class="example" style="margin-top: 20px;">
+                <strong>💡 Try asking:</strong>
+                "Top 5 phonk songs", "Best Taylor Swift albums", "Latest Ed Sheeran releases"
+            </div>
+        </div>
+
+        <!-- Manual Song Input Section -->
+        <div class="input-section" style="margin-top: 30px;">
+            <label for="songs">📝 Or Enter Songs Manually (one per line):</label>
             <textarea id="songs" placeholder="Paste your song list here..."></textarea>
             
             <div class="example">
@@ -639,7 +681,11 @@
         <div class="files-section">
             <div class="section-header">
                 <h2>📁 Files (Last 7 Days)</h2>
-                <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
+                    <button class="delete-all-btn" onclick="deleteAllLocal()" style="background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);">🗑️ Delete All Local</button>
+                    <button class="delete-all-btn" onclick="deleteAllSupabase()" style="background: linear-gradient(135deg, #ff922b 0%, #e67700 100%);">🗑️ Delete All Supabase</button>
+                </div>
                 </div>
             <div id="filesContainer">
                 <div class="loading-files">
@@ -926,10 +972,157 @@
             return date.toLocaleDateString();
         }
         
+        // Bulk delete functions
+        async function deleteAllLocal() {
+            if (!confirm('⚠️ Are you sure you want to delete ALL local files from the last 7 days?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/delete-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ location: 'local' })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showToast(`${data.message}`, 'success');
+                    loadFiles(); // Refresh the file list
+                } else {
+                    showToast(`Error: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showToast(`Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function deleteAllSupabase() {
+            if (!confirm('⚠️ Are you sure you want to delete ALL Supabase files from the last 7 days?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/delete-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ location: 'supabase' })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showToast(`${data.message}`, 'success');
+                    loadFiles(); // Refresh the file list
+                } else {
+                    showToast(`Error: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showToast(`Network error: ${error.message}`, 'error');
+            }
+        }
+        
         // Load files when page loads
         document.addEventListener('DOMContentLoaded', () => {
             loadFiles();
         });
+        
+        // AI Chat Functions
+        let currentAIDetectedSongs = [];
+        
+        async function askAI() {
+            const input = document.getElementById('aiQuery');
+            const query = input.value.trim();
+            const askBtn = document.getElementById('aiAskBtn');
+            const responseBox = document.getElementById('aiResponseBox');
+            const responseText = document.getElementById('aiResponseText');
+            const downloadBtn = document.getElementById('downloadAiBtn');
+            const songCountBadge = document.getElementById('songCountBadge');
+            
+            if (!query) {
+                showToast('Please enter a music-related question!', 'error');
+                return;
+            }
+            
+            // Show loading state
+            askBtn.disabled = true;
+            askBtn.textContent = 'Thinking...';
+            responseBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/ai-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Display AI response
+                    responseText.textContent = data.response;
+                    responseBox.style.display = 'block';
+                    responseBox.style.animation = 'slideIn 0.5s ease-out';
+                    
+                    // Store detected songs
+                    currentAIDetectedSongs = data.detected_songs || [];
+                    
+                    // Show download button if songs were detected
+                    if (currentAIDetectedSongs.length > 0) {
+                        downloadBtn.style.display = 'block';
+                        downloadBtn.style.animation = 'slideIn 0.5s ease-out';
+                        songCountBadge.style.display = 'inline-block';
+                        songCountBadge.textContent = `${currentAIDetectedSongs.length} songs detected`;
+                    } else {
+                        songCountBadge.style.display = 'none';
+                    }
+                    
+                    showToast('✨ AI response ready!', 'success');
+                } else {
+                    showToast(data.message || 'AI request failed!', 'error');
+                }
+            } catch (error) {
+                showToast('Network error! Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                askBtn.disabled = false;
+                askBtn.textContent = 'Ask AI';
+            }
+        }
+        
+        async function downloadFromAI() {
+            if (currentAIDetectedSongs.length === 0) {
+                showToast('No songs detected in AI response!', 'error');
+                return;
+            }
+            
+            // Format songs for download
+            const songList = currentAIDetectedSongs
+                .map(song => song.full_query)
+                .join('\n');
+            
+            // Fill the textarea
+            document.getElementById('songs').value = songList;
+            
+            // Show toast that download is starting
+            showToast(`✅ Starting download for ${currentAIDetectedSongs.length} songs!`, 'success');
+            
+            // Scroll to progress section
+            setTimeout(() => {
+                document.getElementById('statusSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 500);
+            
+            // Automatically start the download
+            await startDownload();
+        }
     </script>
 </body>
-</html> 
+</html>
