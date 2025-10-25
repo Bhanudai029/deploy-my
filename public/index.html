@@ -1228,6 +1228,15 @@
                 return;
             }
             
+            // Clear previous download progress and results
+            const statusSection = document.getElementById('statusSection');
+            const progressLog = document.getElementById('progressLog');
+            const resultsSection = document.getElementById('resultsSection');
+            
+            statusSection.classList.remove('active');
+            progressLog.innerHTML = '';
+            resultsSection.innerHTML = '';
+            
             // Show loading state
             askBtn.disabled = true;
             askBtn.textContent = 'Thinking...';
