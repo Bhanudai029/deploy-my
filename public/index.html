@@ -657,8 +657,9 @@
         <!-- File Management Section -->
         <div class="files-section">
             <div class="section-header">
-                <h2>📁 Files (Last 24 Hours)</h2>
-                <div style="display: flex; gap: 10px;">
+                <h2>📁 Files (Last 7 Days)</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div id="usageBadge" style="padding:8px 12px;border-radius:12px;background:linear-gradient(135deg,#4dabf7 0%,#228be6 100%);color:#fff;font-weight:600;">🔍 SERP: <span id="serpUsage">--/--</span></div>
                     <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
                     <button class="delete-all-btn" onclick="deleteAllLocal()" style="background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);">🗑️ Delete All Local</button>
                     <button class="delete-all-btn" onclick="deleteAllSupabase()" style="background: linear-gradient(135deg, #ff922b 0%, #e67700 100%);">🗑️ Delete All Supabase</button>
@@ -672,7 +673,23 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Supabase client for SERP usage display
+        const SUPABASE_URL = 'https://pcunwjpnybmcepkvfggg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjdW53anBueWJtY2Vwa3ZmZ2dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5OTI0ODYsImV4cCI6MjA3NDU2ODQ4Nn0.6ZBEfn8o8xvFt5DJ1U5rCbv6nB2GjCbcXHWkcP-IMM8';
+        const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function loadUsage() {
+            try {
+                const { data, error } = await supa.rpc('get_serp_usage');
+                if (!error && data && data.length > 0) {
+                    const { used, quota } = data[0];
+                    document.getElementById('serpUsage').textContent = `${used}/${quota}`;
+                }
+            } catch (_) {}
+        }
+
         // API Base URL - Points to your Sevalla backend
         const API_BASE_URL = 'https://deploy-my-pro-840rq.sevalla.app';
         
@@ -850,7 +867,7 @@
                     container.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📂</div>
-                            <p>No files found in the last 24 hours</p>
+                            <p>No files found in the last 7 days</p>
                         </div>
                     `;
                     return;
@@ -954,7 +971,7 @@
         
         // Bulk delete functions
         async function deleteAllLocal() {
-            if (!confirm('⚠️ Are you sure you want to delete ALL local files from the last 24 hours?')) {
+            if (!confirm('⚠️ Are you sure you want to delete ALL local files from the last 7 days?')) {
                 return;
             }
             
@@ -981,7 +998,7 @@
         }
         
         async function deleteAllSupabase() {
-            if (!confirm('⚠️ Are you sure you want to delete ALL Supabase files from the last 24 hours?')) {
+            if (!confirm('⚠️ Are you sure you want to delete ALL Supabase files from the last 7 days?')) {
                 return;
             }
             
@@ -1009,6 +1026,7 @@
         
         // Load files when page loads
         document.addEventListener('DOMContentLoaded', () => {
+            loadUsage();
             loadFiles();
         });
     </script>
