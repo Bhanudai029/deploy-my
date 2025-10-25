@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from youtube_auto_downloader import YouTubeAutoDownloader
 from supabase_uploader import SupabaseUploader
-from groq_service import fetch_music_query_response
+from groq_service import fetch_music_query_response, read_search_counter
 from song_parser import parse_songs_from_ai_response
 
 # Load environment variables from .env file
@@ -285,6 +285,26 @@ def parse_songs():
             "success": False,
             "message": f"Parse error: {str(e)}"
         })
+
+@app.route('/search-counter-stats')
+def search_counter_stats():
+    """Get SerpAPI search counter statistics"""
+    try:
+        counter = read_search_counter()
+        remaining = counter['maxSearches'] - counter['totalSearches']
+        percentage_used = (counter['totalSearches'] / counter['maxSearches']) * 100 if counter['maxSearches'] > 0 else 0
+        
+        return jsonify({
+            'success': True,
+            'totalSearches': counter['totalSearches'],
+            'maxSearches': counter['maxSearches'],
+            'remaining': remaining,
+            'percentage_used': round(percentage_used, 2),
+            'lastReset': counter.get('lastReset', 'Unknown')
+        })
+    except Exception as e:
+        print(f"Error fetching search counter: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/storage-stats')
 def storage_stats():

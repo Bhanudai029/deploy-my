@@ -4,13 +4,18 @@ Handles AI-powered music recommendations and information
 """
 
 import os
+import json
 from datetime import datetime
 from groq import Groq
 import requests
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Search counter file path
+COUNTER_FILE = Path(__file__).parent / 'searchCounter.json'
 
 # Groq API Configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
@@ -20,6 +25,34 @@ SERP_API_KEY = os.getenv("SERP_API_KEY", "")
 
 client = Groq(api_key=GROQ_API_KEY)
 
+
+def read_search_counter():
+    """Read the search counter from file"""
+    try:
+        if not COUNTER_FILE.exists():
+            default_counter = {
+                'totalSearches': 0,
+                'maxSearches': 250,
+                'lastReset': datetime.now().isoformat()
+            }
+            COUNTER_FILE.write_text(json.dumps(default_counter, indent=2))
+            return default_counter
+        
+        return json.loads(COUNTER_FILE.read_text())
+    except Exception as e:
+        print(f"❌ Error reading search counter: {e}")
+        return {'totalSearches': 0, 'maxSearches': 250, 'lastReset': datetime.now().isoformat()}
+
+def increment_search_counter():
+    """Increment the search counter"""
+    try:
+        counter = read_search_counter()
+        counter['totalSearches'] += 1
+        COUNTER_FILE.write_text(json.dumps(counter, indent=2))
+        return counter
+    except Exception as e:
+        print(f"❌ Error incrementing counter: {e}")
+        return read_search_counter()
 
 def get_current_datetime():
     """Get current date and time information"""
@@ -71,7 +104,11 @@ def search_web_serpapi(query: str, max_results: int = 5) -> list:
                 'description': result.get('snippet', '')
             })
         
+        # Increment search counter
+        counter = increment_search_counter()
         print(f"✅ SerpAPI returned {len(results)} results")
+        print(f"📊 Search count: {counter['totalSearches']}/{counter['maxSearches']}")
+        
         return results
         
     except Exception as e:

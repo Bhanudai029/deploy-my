@@ -745,6 +745,17 @@
                 </div>
             </div>
             
+            <!-- SerpAPI Search Counter -->
+            <div class="storage-stats" id="searchCounterStats" style="display: none;">
+                <div class="storage-header">
+                    <div class="storage-title">🔍 SerpAPI Searches</div>
+                    <div class="storage-details" id="searchCounterText">Loading...</div>
+                </div>
+                <div class="storage-bar-container">
+                    <div class="storage-bar" id="searchCounterBar" style="width: 0%;"></div>
+                </div>
+            </div>
+            
             <div class="section-header">
                 <h2>📁 Files (Last 7 Days)</h2>
                 <div style="display: flex; gap: 10px;">
@@ -1099,6 +1110,44 @@
             }
         }
         
+        // Search Counter Stats Functions
+        async function loadSearchCounterStats() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/search-counter-stats`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const searchCounterStats = document.getElementById('searchCounterStats');
+                    const searchCounterText = document.getElementById('searchCounterText');
+                    const searchCounterBar = document.getElementById('searchCounterBar');
+                    
+                    // Show search counter stats
+                    searchCounterStats.style.display = 'block';
+                    
+                    // Update text
+                    const used = data.totalSearches;
+                    const limit = data.maxSearches;
+                    const remaining = data.remaining;
+                    const percentage = data.percentage_used;
+                    
+                    searchCounterText.textContent = `${used} / ${limit} searches used (${remaining} remaining)`;
+                    
+                    // Update progress bar
+                    searchCounterBar.style.width = `${Math.min(percentage, 100)}%`;
+                    
+                    // Change color based on usage
+                    searchCounterBar.classList.remove('warning', 'danger');
+                    if (percentage >= 90) {
+                        searchCounterBar.classList.add('danger');
+                    } else if (percentage >= 70) {
+                        searchCounterBar.classList.add('warning');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading search counter stats:', error);
+            }
+        }
+        
         // Storage Stats Functions
         async function loadStorageStats() {
             try {
@@ -1141,6 +1190,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadFiles();
             loadStorageStats();
+            loadSearchCounterStats();
         });
         
         // AI Chat Functions
@@ -1195,6 +1245,9 @@
                     } else {
                         songCountBadge.style.display = 'none';
                     }
+                    
+                    // Refresh search counter (AI uses SerpAPI)
+                    loadSearchCounterStats();
                     
                     showToast('✨ AI response ready!', 'success');
                 } else {
