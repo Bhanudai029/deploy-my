@@ -657,7 +657,7 @@
         <!-- File Management Section -->
         <div class="files-section">
             <div class="section-header">
-                <h2>📁 Files (Last 24 Hours)</h2>
+                <h2>📁 Files (Last 7 Days)</h2>
                 <div style="display: flex; gap: 10px;">
                     <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
                     <button class="delete-all-btn" onclick="deleteAllLocal()" style="background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);">🗑️ Delete All Local</button>
@@ -850,7 +850,7 @@
                     container.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📂</div>
-                            <p>No files found in the last 24 hours</p>
+                            <p>No files found in the last 7 days</p>
                         </div>
                     `;
                     return;
@@ -954,7 +954,7 @@
         
         // Bulk delete functions
         async function deleteAllLocal() {
-            if (!confirm('⚠️ Are you sure you want to delete ALL local files from the last 24 hours?')) {
+            if (!confirm('⚠️ Are you sure you want to delete ALL local files from the last 7 days?')) {
                 return;
             }
             
@@ -981,7 +981,7 @@
         }
         
         async function deleteAllSupabase() {
-            if (!confirm('⚠️ Are you sure you want to delete ALL Supabase files from the last 24 hours?')) {
+            if (!confirm('⚠️ Are you sure you want to delete ALL Supabase files from the last 7 days?')) {
                 return;
             }
             

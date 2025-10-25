@@ -638,7 +638,7 @@
         <!-- File Management Section -->
         <div class="files-section">
             <div class="section-header">
-                <h2>📁 Files (Last 24 Hours)</h2>
+                <h2>📁 Files (Last 7 Days)</h2>
                 <button class="refresh-btn" onclick="loadFiles()">🔄 Refresh Files</button>
                 </div>
             <div id="filesContainer">
@@ -824,7 +824,7 @@
                     container.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📂</div>
-                            <p>No files found in the last 24 hours</p>
+                            <p>No files found in the last 7 days</p>
                         </div>
                     `;
                 return;
