@@ -4,10 +4,14 @@ import threading
 import os
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
 from youtube_auto_downloader import YouTubeAutoDownloader
 from supabase_uploader import SupabaseUploader
 from groq_service import fetch_music_query_response
 from song_parser import parse_songs_from_ai_response
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 
