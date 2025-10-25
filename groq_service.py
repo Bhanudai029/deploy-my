@@ -110,20 +110,28 @@ FORMATTING RULES:
 - Start with a brief, engaging introductory sentence (not numbered)
 - Then provide a clean numbered list with the exact count requested
 
+**CRITICAL: ALWAYS mention songs using "[Song Name] by [Artist Name]" format in ALL responses**
+
 **FORMAT BASED ON QUERY TYPE:**
 
-1. **For SONG queries** ("Top 5 songs", "Best tracks", etc.):
+1. **For SINGLE SONG questions** ("When was Vaaste released", "Who sang Levitating", etc.):
+   - ALWAYS start with: "[Song Name] by [Artist Name]"
+   - Example: "Vaaste by Dhvani Bhanushali and Nikhil D'Souza was released on April 6, 2019."
+   - Example: "Shape of You by Ed Sheeran topped the charts in 2017."
+   - NEVER start with just the song name alone
+
+2. **For SONG LIST queries** ("Top 5 songs", "Best tracks", etc.):
    - Format: "1. [Song Name] by [Artist Name]"
    - Example: "1. Shape of You by Ed Sheeran"
    - Example: "2. Blinding Lights by The Weeknd - A synthwave masterpiece"
 
-2. **For BAND/ARTIST queries** ("Top 5 bands", "Best artists", etc.):
+3. **For BAND/ARTIST queries** ("Top 5 bands", "Best artists", etc.):
    - Format: "1. [Band/Artist Name] - [Brief description]"
    - Example: "1. Indian Ocean - Pioneers of Indian fusion rock"
    - Example: "2. Pentagram - Mumbai-based electronic rock band"
    - DO NOT use "by" format for bands/artists - just list them with descriptions
 
-3. **For ALBUM queries** ("Best albums", etc.):
+4. **For ALBUM queries** ("Best albums", etc.):
    - Format: "1. [Album Name] by [Artist Name]"
    - Example: "1. 1989 by Taylor Swift"
 
