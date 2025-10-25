@@ -100,8 +100,8 @@ def upload_song_to_sonnix(song_data: dict) -> dict:
                 "imageUrl": {"stringValue": song_data.get('imageUrl', '/default-song.png')},
                 "plays": {"integerValue": "0"},
                 "isLiked": {"booleanValue": False},
-                "createdAt": {"timestampValue": datetime.now().isoformat()},
-                "updatedAt": {"timestampValue": datetime.now().isoformat()},
+                "createdAt": {"timestampValue": datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')},
+                "updatedAt": {"timestampValue": datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')},
                 "customId": {"stringValue": f"song_{int(datetime.now().timestamp())}_{song_data['title'][:10].replace(' ', '_')}"}
             }
         }
