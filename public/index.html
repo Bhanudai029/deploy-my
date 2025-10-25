@@ -438,6 +438,15 @@
             gap: 10px;
         }
         
+        .file-name-cell a {
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .file-name-cell a:hover {
+            text-decoration: underline;
+        }
+        
         .file-icon {
             font-size: 20px;
         }
@@ -1005,12 +1014,22 @@
                         durationText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
                     }
                     
+                    // Create clickable link for file name
+                    let fileNameHtml;
+                    if (file.location === 'supabase' && file.url) {
+                        // Supabase files: clickable link to open MP3
+                        fileNameHtml = `<a href="${file.url}" target="_blank" style="color: var(--text-primary); text-decoration: none; transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-primary)'">${file.name}</a>`;
+                    } else {
+                        // Local files: no link
+                        fileNameHtml = `<span style="color: var(--text-secondary);">${file.name}</span>`;
+                    }
+                    
                     html += `
                         <tr>
                             <td>
                                 <div class="file-name-cell">
                                     <span class="file-icon">🎵</span>
-                                    <span>${file.name}</span>
+                                    ${fileNameHtml}
                                 </div>
                             </td>
                             <td><span class="${badgeClass}">${locationIcon} ${locationText}</span></td>
