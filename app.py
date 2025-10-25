@@ -517,6 +517,26 @@ def download_songs(songs):
                 video_data=video_data
             )
             
+            # Upload to Sonnix Firebase if Supabase upload was successful
+            if upload_success > 0 and public_urls:
+                try:
+                    from sonnix_uploader import upload_batch_to_sonnix
+                    from pathlib import Path
+                    
+                    # Create progress callback
+                    def sonnix_progress(message):
+                        download_status['progress'].append(message)
+                    
+                    # Get audio file paths
+                    audio_folder = Path("Audios")
+                    audio_files = [str(audio_folder / filename) for filename, _ in public_urls]
+                    
+                    # Upload to Sonnix with progress tracking
+                    sonnix_results = upload_batch_to_sonnix(audio_files, public_urls, progress_callback=sonnix_progress)
+                    
+                except Exception as sonnix_error:
+                    download_status['progress'].append(f'⚠️ Sonnix upload error: {str(sonnix_error)}')
+            
             # Store results
             download_status['results'] = {
                 'total_songs': len(songs),

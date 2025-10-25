@@ -141,18 +141,24 @@ def upload_song_to_sonnix(song_data: dict) -> dict:
         }
 
 
-def upload_batch_to_sonnix(audio_files: list, public_urls: list) -> dict:
+def upload_batch_to_sonnix(audio_files: list, public_urls: list, progress_callback=None) -> dict:
     """
     Upload multiple audio files to Sonnix after Supabase upload
     
     Args:
         audio_files: List of local file paths
         public_urls: List of tuples [(filename, supabase_url), ...]
+        progress_callback: Optional function to call with progress updates
         
     Returns:
         {'successful': int, 'failed': int, 'details': list}
     """
-    print("\n🔄 Starting Sonnix Firebase upload...")
+    def log(message):
+        print(message)
+        if progress_callback:
+            progress_callback(message)
+    
+    log("🎸 Uploading to Sonnix...")
     
     results = {
         'successful': 0,
@@ -163,14 +169,16 @@ def upload_batch_to_sonnix(audio_files: list, public_urls: list) -> dict:
     # Create a mapping of filename to Supabase URL
     url_map = {filename: url for filename, url in public_urls}
     
-    for audio_file in audio_files:
+    log(f"🎵 Uploading {len(audio_files)} songs to Sonnix Firebase...")
+    
+    for i, audio_file in enumerate(audio_files, 1):
         try:
             file_path = Path(audio_file)
             filename = file_path.name
             
             # Check if we have a Supabase URL for this file
             if filename not in url_map:
-                print(f"⚠️ Skipping {filename}: No Supabase URL found")
+                log(f"⚠️ Skipping {filename}: No Supabase URL found")
                 results['failed'] += 1
                 results['details'].append({
                     'filename': filename,
@@ -199,12 +207,15 @@ def upload_batch_to_sonnix(audio_files: list, public_urls: list) -> dict:
             }
             
             # Upload to Sonnix
+            log(f"📤 [{i}/{len(audio_files)}] {metadata['song']} by {metadata['artist']}")
             result = upload_song_to_sonnix(song_data)
             
             if result['success']:
                 results['successful'] += 1
+                log(f"✅ [{i}/{len(audio_files)}] Success")
             else:
                 results['failed'] += 1
+                log(f"❌ [{i}/{len(audio_files)}] Failed")
             
             results['details'].append({
                 'filename': filename,
@@ -218,7 +229,7 @@ def upload_batch_to_sonnix(audio_files: list, public_urls: list) -> dict:
             })
             
         except Exception as e:
-            print(f"❌ Error processing {audio_file}: {str(e)}")
+            log(f"❌ Error processing {audio_file}: {str(e)}")
             results['failed'] += 1
             results['details'].append({
                 'filename': Path(audio_file).name,
@@ -226,8 +237,9 @@ def upload_batch_to_sonnix(audio_files: list, public_urls: list) -> dict:
                 'error': str(e)
             })
     
-    print(f"\n✅ Sonnix upload complete: {results['successful']} successful, {results['failed']} failed")
-    print(f"🎉 Songs available at: https://sonnix.netlify.app/all-songs\n")
+    log(f"✅ Sonnix complete: {results['successful']}/{len(audio_files)} uploaded")
+    if results['successful'] > 0:
+        log(f"🎉 View at: https://sonnix.netlify.app/all-songs")
     
     return results
 

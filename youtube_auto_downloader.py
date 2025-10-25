@@ -809,6 +809,7 @@ class YouTubeAutoDownloader:
             if upload_success_count > 0 and public_urls:
                 try:
                     from sonnix_uploader import upload_batch_to_sonnix
+                    # No progress callback here since this runs in the downloader context
                     sonnix_results = upload_batch_to_sonnix(file_paths, public_urls)
                     print(f"\n🎶 Sonnix Firebase: {sonnix_results['successful']} uploaded, {sonnix_results['failed']} failed")
                 except Exception as sonnix_error:
