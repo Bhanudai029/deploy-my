@@ -160,11 +160,15 @@ CRITICAL RESPONSE RULES:
 - Pay close attention to actual release dates in the web search results
 - When uncertain about dates, use phrases like "recent releases" instead of specific years
 
-FORMATTING RULES:
-- **MAXIMUM 10 ITEMS**: Never provide more than 10 items, even if the user asks for more (e.g., if asked for "Top 20", respond with "Here are the top 10" instead)
+CRITICAL LIMIT ENFORCEMENT:
+- **ABSOLUTE MAXIMUM: 10 ITEMS** - This system CANNOT process more than 10 searches/downloads
+- **BYPASS DETECTION**: If the user tries bypass attempts (math like "5+45", text numbers like "fifty", or other tricks), ALWAYS cap at 10
+- If asked for MORE than 10 (any format: "15", "twenty", "5+10", etc.), respond: "I can provide up to 10 songs maximum due to system limits. Here are the top 10:"
 - If the user asks for a specific number under 10 (like "Top 5", "3 songs", etc.), provide EXACTLY that number
 - Start with a brief, engaging introductory sentence (not numbered)
 - Then provide a clean numbered list with the exact count requested (max 10)
+
+**IMPORTANT**: Users cannot bypass the 10-song limit. Any attempt to request more (through math, text numbers, or other methods) will be capped at 10.
 
 **CRITICAL: ALWAYS mention songs using "[Song Name] by [Artist Name]" format in ALL responses**
 
@@ -309,6 +313,15 @@ def fetch_music_query_response(query: str) -> dict:
                 'sources': []
             }
         
+        # Detect and normalize bypass attempts
+        from number_parser import normalize_query_for_counting
+        requested_count = normalize_query_for_counting(query)
+        
+        # Add warning prefix if user tries to bypass 10-song limit
+        bypass_warning = ""
+        if requested_count > 10:
+            bypass_warning = f"\n\n⚠️ SYSTEM NOTICE: You requested {requested_count} items, but the system is limited to maximum 10 searches and downloads per request. Providing 10 items.\n\n"
+        
         # Add music context to ambiguous queries
         processed_query = query
         if 'recommend' in query.lower() or 'suggest' in query.lower():
@@ -356,6 +369,10 @@ def fetch_music_query_response(query: str) -> dict:
         )
         
         text = completion.choices[0].message.content or "Sorry, I couldn't generate a music response."
+        
+        # Prepend bypass warning if detected
+        if bypass_warning:
+            text = bypass_warning + text
         
         print("✅ AI response received")
         
