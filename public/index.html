@@ -982,6 +982,7 @@
                                     <th>FILE NAME</th>
                                     <th>LOCATION</th>
                                     <th>SIZE</th>
+                                    <th>DURATION</th>
                                     <th>UPLOADED</th>
                                     <th style="text-align: center;">ACTION</th>
                                 </tr>
@@ -996,6 +997,14 @@
                     const locationText = file.location === 'supabase' ? 'Supabase' : 'Local';
                     const locationIcon = file.location === 'supabase' ? '☁️' : '💾';
                     
+                    // Format duration
+                    let durationText = 'N/A';
+                    if (file.duration_seconds) {
+                        const minutes = Math.floor(file.duration_seconds / 60);
+                        const seconds = file.duration_seconds % 60;
+                        durationText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                    
                     html += `
                         <tr>
                             <td>
@@ -1006,6 +1015,7 @@
                             </td>
                             <td><span class="${badgeClass}">${locationIcon} ${locationText}</span></td>
                             <td><strong>${file.size_mb} MB</strong></td>
+                            <td><strong style="color: var(--primary);">⏱️ ${durationText}</strong></td>
                             <td>${timeAgo}</td>
                             <td style="text-align: center;">
                                 <button class="delete-btn" onclick="deleteFile('${file.name}', '${file.location}')">

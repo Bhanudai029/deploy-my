@@ -9,6 +9,8 @@ from youtube_auto_downloader import YouTubeAutoDownloader
 from supabase_uploader import SupabaseUploader
 from groq_service import fetch_music_query_response
 from song_parser import parse_songs_from_ai_response
+import requests
+from mutagen.mp3 import MP3
 
 # Load environment variables from .env file
 load_dotenv()
@@ -119,12 +121,21 @@ def list_files():
                 file_time = datetime.fromtimestamp(file_stat.st_mtime)
                 
                 if file_time >= cutoff_time:
+                    # Get audio duration for local MP3 files
+                    duration_seconds = None
+                    try:
+                        audio = MP3(str(file_path))
+                        duration_seconds = int(audio.info.length)
+                    except Exception as e:
+                        print(f"Error reading duration for {file_path.name}: {e}")
+                    
                     files.append({
                         'name': file_path.name,
                         'size': file_stat.st_size,
                         'uploaded_at': file_time.isoformat() + 'Z',  # Add Z to indicate UTC
                         'location': 'local',
-                        'size_mb': round(file_stat.st_size / (1024 * 1024), 2)
+                        'size_mb': round(file_stat.st_size / (1024 * 1024), 2),
+                        'duration_seconds': duration_seconds
                     })
         
         # Get Supabase files
@@ -166,6 +177,37 @@ def list_files():
                         meta = file_obj.get('metadata') or {}
                         if isinstance(meta, dict):
                             size_bytes = meta.get('size', 0)
+                        
+                        # Get audio duration for Supabase MP3 files by downloading headers
+                        duration_seconds = None
+                        try:
+                            # Download file temporarily to read duration
+                            import tempfile
+                            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp_file:
+                                response = requests.get(public_url, stream=True, timeout=10)
+                                if response.status_code == 200:
+                                    # Download first 512KB (enough for MP3 metadata)
+                                    chunk_size = 512 * 1024
+                                    for chunk in response.iter_content(chunk_size=8192):
+                                        tmp_file.write(chunk)
+                                        if tmp_file.tell() >= chunk_size:
+                                            break
+                                    tmp_file.flush()
+                                    
+                                    # Read duration
+                                    audio = MP3(tmp_file.name)
+                                    duration_seconds = int(audio.info.length)
+                                    
+                                    # Clean up
+                                    os.unlink(tmp_file.name)
+                        except Exception as e:
+                            print(f"Error reading duration for {file_name}: {e}")
+                            # Clean up on error
+                            try:
+                                if 'tmp_file' in locals():
+                                    os.unlink(tmp_file.name)
+                            except:
+                                pass
 
                         files.append({
                             'name': file_name,
@@ -173,7 +215,8 @@ def list_files():
                             'uploaded_at': uploaded_at_str,  # Use original UTC timestamp
                             'location': 'supabase',
                             'url': public_url,
-                            'size_mb': round((size_bytes or 0) / (1024 * 1024), 2)
+                            'size_mb': round((size_bytes or 0) / (1024 * 1024), 2),
+                            'duration_seconds': duration_seconds
                         })
         except Exception as e:
             print(f"Error fetching Supabase files: {e}")
