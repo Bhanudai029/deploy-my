@@ -116,7 +116,7 @@ def list_files():
                     files.append({
                         'name': file_path.name,
                         'size': file_stat.st_size,
-                        'uploaded_at': file_time.isoformat(),
+                        'uploaded_at': file_time.isoformat() + 'Z',  # Add Z to indicate UTC
                         'location': 'local',
                         'size_mb': round(file_stat.st_size / (1024 * 1024), 2)
                     })
@@ -141,11 +141,16 @@ def list_files():
                 )
                 if ts:
                     try:
+                        # Keep the original timestamp string from Supabase (already in UTC with Z)
+                        uploaded_at_str = str(ts) if str(ts).endswith('Z') else str(ts) + 'Z'
+                        
+                        # Parse for filtering only
                         file_time = datetime.fromisoformat(str(ts).replace('Z', '+00:00'))
                         file_time = file_time.replace(tzinfo=None)
                     except Exception:
-                        # If parsing fails, skip time filter
+                        # If parsing fails, use current time
                         file_time = datetime.now()
+                        uploaded_at_str = file_time.isoformat() + 'Z'
 
                     if file_time >= cutoff_time:
                         file_name = file_obj.get('name', '')
@@ -159,7 +164,7 @@ def list_files():
                         files.append({
                             'name': file_name,
                             'size': size_bytes,
-                            'uploaded_at': file_time.isoformat(),
+                            'uploaded_at': uploaded_at_str,  # Use original UTC timestamp
                             'location': 'supabase',
                             'url': public_url,
                             'size_mb': round((size_bytes or 0) / (1024 * 1024), 2)
