@@ -74,23 +74,16 @@ def parse_songs_from_ai_response(text: str) -> List[Dict[str, str]]:
             })
             continue
         
-        # Try pattern 3 (hyphen format)
-        match = re.match(pattern3, line)
-        if match:
-            song_name = match.group(1).strip()
-            artist_name = match.group(2).strip()
-            
-            # Remove any trailing description
-            if ' - ' in artist_name:
-                parts = artist_name.split(' - ')
-                if len(parts) > 1:
-                    artist_name = parts[0].strip()
-            
-            songs.append({
-                'song': song_name,
-                'artist': artist_name,
-                'full_query': f"{song_name} by {artist_name}"
-            })
+        # Pattern 3 (hyphen format) - DISABLED for artist queries
+        # Only parse if the line contains 'by' keyword
+        # This prevents artist-only responses from being parsed as songs
+        # Example of what we DON'T want to parse:
+        # "1. Swoopna Suman - One of Nepal's most popular singers"
+        # 
+        # We only want lines like:
+        # "1. Song Name by Artist Name - description"
+        
+        # Skip pattern 3 to avoid false positives with artist descriptions
     
     return songs
 
